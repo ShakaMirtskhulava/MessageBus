@@ -32,7 +32,7 @@ public static class EventBusBuilderExtensions
             // Keep track of all registered event types and their name mapping. We send these event types over the message bus
             // and we don't want to do Type.GetType, so we keep track of the name mapping here.
             // This list will also be used to subscribe to events from the underlying message broker implementation.
-            o.EventTypes[typeof(T).Name] = typeof(T);
+            o.EventTypes[typeof(T).FullName] = typeof(T);
         });
 
         return eventBusBuilder;

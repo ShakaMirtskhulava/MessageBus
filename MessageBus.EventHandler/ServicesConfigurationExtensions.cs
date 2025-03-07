@@ -18,7 +18,9 @@ public static class ServicesConfigurationExtensions
             connectionFactory.UserName = "user";
             connectionFactory.Password = "password";
         })
-        .AddSubscription<OrderCreated, OrdersEventHandler>();
+        .AddSubscription<OrderCreated, OrderCreatedHandler>()
+        .AddSubscription<OrderUpdated,OrderUpdatedHandler>()
+        .AddSubscription<OrderDeleted, OrderDeletedHandler>();
 
         return services;
     }

@@ -53,27 +53,27 @@ public sealed class RabbitMQEventBus(
 
                 //If it is an event publisher that's running this code
                 //This'll be empty
-                foreach (var (eventName, eventType) in _subscriptionInfo.EventTypes)
+                foreach (var (eventFullName, eventType) in _subscriptionInfo.EventTypes)
                 {
-                    await _consumerChannel.ExchangeDeclareAsync(exchange: eventName, type: "direct");
+                    await _consumerChannel.ExchangeDeclareAsync(exchange: eventFullName, type: "direct");
 
-                    await _consumerChannel.QueueDeclareAsync(queue: eventName,
+                    await _consumerChannel.QueueDeclareAsync(queue: eventFullName,
                                              durable: true,
                                              exclusive: false,
                                              autoDelete: false,
                                              arguments: null);
 
                     await _consumerChannel.QueueBindAsync(
-                        queue: eventName,
-                        exchange: eventName,
-                        routingKey: eventName);
+                        queue: eventFullName,
+                        exchange: eventFullName,
+                        routingKey: eventType.Name);
 
                     var consumer = new AsyncEventingBasicConsumer(_consumerChannel);
 
                     consumer.ReceivedAsync += OnMessageReceived;
 
                     await _consumerChannel.BasicConsumeAsync(
-                        queue: eventName,
+                        queue: eventFullName,
                         autoAck: false,
                         consumer: consumer);
                 }
@@ -124,7 +124,7 @@ public sealed class RabbitMQEventBus(
 
     private async Task OnMessageReceived(object sender, BasicDeliverEventArgs eventArgs)
     {
-        var eventName = eventArgs.RoutingKey;
+        var eventName = eventArgs.Exchange;
         var message = Encoding.UTF8.GetString(eventArgs.Body.Span);
 
         try

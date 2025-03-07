@@ -42,8 +42,7 @@ public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger) 
 {
     public async Task Handle(OrderCreated @event)
     {
-        logger.LogInformation("Handling event: {@IntegrationEvent}", @event);
+        logger.LogInformation("Handling order created event");
         await Task.Delay(100);
-        Console.WriteLine(@event.data);
     }
 }
