@@ -124,6 +124,7 @@ public sealed class RabbitMQEventBus(
 
     private async Task OnMessageReceived(object sender, BasicDeliverEventArgs eventArgs)
     {
+        //Exchange name will match the event name
         var eventName = eventArgs.Exchange;
         var message = Encoding.UTF8.GetString(eventArgs.Body.Span);
 
@@ -153,6 +154,8 @@ public sealed class RabbitMQEventBus(
         }
 
         var integrationEvent = DeserializeMessage(message, eventType);
+
+        logger.LogInformation("Processing event {EventName} with Id {EventId}", eventName, integrationEvent.Id);
 
         foreach (var handler in scope.ServiceProvider.GetKeyedServices<IIntegrationEventHandler>(eventType))
             await handler.Handle(integrationEvent);
