@@ -10,17 +10,16 @@ public static class RabbitMqDependencyInjectionExtensions
 {
     private const string SectionName = "EventBus";
 
-    public static IEventBusBuilder AddRabbitMqEventBus(this IHostApplicationBuilder builder, string connectionName)
+    public static IEventBusBuilder AddRabbitMqEventBus(this IHostApplicationBuilder builder, Action<ConnectionFactory> configureConnectionFactory)
     {
         ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(configureConnectionFactory);
 
-        var connectionFactory = new ConnectionFactory
-        {
-            HostName = "localhost",
-            Port = 5672,
-            UserName = "user",
-            Password = "password"
-        };
+        var connectionFactory = new ConnectionFactory();
+        configureConnectionFactory(connectionFactory);
+
+        if (string.IsNullOrEmpty(connectionFactory.HostName) || string.IsNullOrEmpty(connectionFactory.UserName) || string.IsNullOrEmpty(connectionFactory.Password))
+            throw new InvalidOperationException("HostName, UserName, and Password must be set for ConnectionFactory");
 
         builder.Services.AddSingleton(connectionFactory);
 
@@ -31,6 +30,28 @@ public static class RabbitMqDependencyInjectionExtensions
 
         return new EventBusBuilder(builder.Services);
     }
+
+    public static IEventBusBuilder AddRabbitMqEventBus(this IServiceCollection serviceProvider,IConfiguration configuration, Action<ConnectionFactory> configureConnectionFactory)
+    {
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(configureConnectionFactory);
+
+        var connectionFactory = new ConnectionFactory();
+        configureConnectionFactory(connectionFactory);
+
+        if (string.IsNullOrEmpty(connectionFactory.HostName) || string.IsNullOrEmpty(connectionFactory.UserName) || string.IsNullOrEmpty(connectionFactory.Password))
+            throw new InvalidOperationException("HostName, UserName, and Password must be set for ConnectionFactory");
+
+        serviceProvider.AddSingleton(connectionFactory);
+
+        serviceProvider.Configure<EventBusOptions>(configuration.GetSection(SectionName));
+
+        serviceProvider.AddSingleton<IEventBus, RabbitMQEventBus>();
+        serviceProvider.AddSingleton<IHostedService>(sp => (RabbitMQEventBus)sp.GetRequiredService<IEventBus>());
+
+        return new EventBusBuilder(serviceProvider);
+    }
+
 
     private class EventBusBuilder(IServiceCollection services) : IEventBusBuilder
     {

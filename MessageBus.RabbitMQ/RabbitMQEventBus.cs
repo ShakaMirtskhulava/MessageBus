@@ -12,7 +12,7 @@ using RabbitMQ.Client.Exceptions;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
- 
+
 namespace MessageBus.RabbitMQ;
 
 public sealed class RabbitMQEventBus(
@@ -22,19 +22,15 @@ public sealed class RabbitMQEventBus(
     IOptions<EventBusSubscriptionInfo> subscriptionOptions
     ) : IEventBus, IDisposable, IHostedService
 {
-    private const string ExchangeName = "test_client";
-
     private readonly ResiliencePipeline _pipeline = CreateResiliencePipeline(options.Value.RetryCount);
-    private readonly string _queueName = options.Value.SubscriptionClientName;
     private readonly EventBusSubscriptionInfo _subscriptionInfo = subscriptionOptions.Value;
     private IConnection? _rabbitMQConnection;
-
     private IChannel? _consumerChannel;
+
+    public bool IsConnected => _rabbitMQConnection?.IsOpen ?? false;
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        // Messaging is async so we don't need to wait for it to complete. On top of this
-        // the APIs are blocking, so we need to run this on a background thread.
         _ = Task.Factory.StartNew(async () =>
         {
             try
@@ -55,29 +51,31 @@ public sealed class RabbitMQEventBus(
                     return Task.CompletedTask;
                 };
 
-                await _consumerChannel.ExchangeDeclareAsync(exchange: ExchangeName, type: "direct");
-
-                await _consumerChannel.QueueDeclareAsync(queue: _queueName,
-                                         durable: true,
-                                         exclusive: false,
-                                         autoDelete: false,
-                                         arguments: null);
-
-                var consumer = new AsyncEventingBasicConsumer(_consumerChannel);
-
-                consumer.ReceivedAsync += OnMessageReceived;
-
-                await _consumerChannel.BasicConsumeAsync(
-                    queue: _queueName,
-                    autoAck: false,
-                    consumer: consumer);
-
-                foreach (var (eventName, _) in _subscriptionInfo.EventTypes)
+                //If it is an event publisher that's running this code
+                //This'll be empty
+                foreach (var (eventName, eventType) in _subscriptionInfo.EventTypes)
                 {
+                    await _consumerChannel.ExchangeDeclareAsync(exchange: eventName, type: "direct");
+
+                    await _consumerChannel.QueueDeclareAsync(queue: eventName,
+                                             durable: true,
+                                             exclusive: false,
+                                             autoDelete: false,
+                                             arguments: null);
+
                     await _consumerChannel.QueueBindAsync(
-                        queue: _queueName,
-                        exchange: ExchangeName,
+                        queue: eventName,
+                        exchange: eventName,
                         routingKey: eventName);
+
+                    var consumer = new AsyncEventingBasicConsumer(_consumerChannel);
+
+                    consumer.ReceivedAsync += OnMessageReceived;
+
+                    await _consumerChannel.BasicConsumeAsync(
+                        queue: eventName,
+                        autoAck: false,
+                        consumer: consumer);
                 }
             }
             catch (Exception ex)
@@ -92,13 +90,16 @@ public sealed class RabbitMQEventBus(
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     public void Dispose() => _consumerChannel?.Dispose();
+
     public async Task PublishAsync(IntegrationEvent @event)
     {
-        var routingKey = @event.GetType().Name;
+        var eventType = @event.GetType();
+        var exchangeName = eventType.FullName!;
+        var routingKey = eventType.Name!;
 
         using var channel = await _rabbitMQConnection!.CreateChannelAsync() ?? throw new InvalidOperationException("RabbitMQ connection is not open");
 
-        await channel.ExchangeDeclareAsync(exchange: ExchangeName, type: "direct");
+        await channel.ExchangeDeclareAsync(exchange: exchangeName, type: "direct");
 
         var body = SerializeMessage(@event);
 
@@ -107,14 +108,14 @@ public sealed class RabbitMQEventBus(
             try
             {
                 await channel.BasicPublishAsync(
-                        exchange: ExchangeName,
+                        exchange: exchangeName,
                         routingKey: routingKey,
                         mandatory: true,
                         body: body);
             }
             catch (Exception ex)
             {
-                logger.LogTrace("Exception occured when publishing the event with Id: {EventId} in RabbitMQ, with message: {@exceptionMessage}", @event.Id,ex.Message);
+                logger.LogTrace("Exception occurred when publishing the event with Id: {EventId} in RabbitMQ, with message: {@exceptionMessage}", @event.Id, ex.Message);
                 throw;
             }
         });
@@ -138,9 +139,9 @@ public sealed class RabbitMQEventBus(
             logger.LogWarning(ex, "Error Processing message \"{Message}\"", message);
         }
 
-        // In a REAL WORLD app this should be handled with a Dead Letter Exchange (DLX). 
         await _consumerChannel!.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
     }
+
     private async Task ProcessEvent(string eventName, string message)
     {
         await using var scope = serviceProvider.CreateAsyncScope();
@@ -156,11 +157,14 @@ public sealed class RabbitMQEventBus(
         foreach (var handler in scope.ServiceProvider.GetKeyedServices<IIntegrationEventHandler>(eventType))
             await handler.Handle(integrationEvent);
     }
+
     private IntegrationEvent DeserializeMessage(string message, Type eventType) =>
-        JsonSerializer.Deserialize(message, eventType, _subscriptionInfo.JsonSerializerOptions) as IntegrationEvent 
+        JsonSerializer.Deserialize(message, eventType, _subscriptionInfo.JsonSerializerOptions) as IntegrationEvent
             ?? throw new Exception("Couldn't deserialize IntegrationEvent");
+
     private byte[] SerializeMessage(IntegrationEvent @event) =>
         JsonSerializer.SerializeToUtf8Bytes(@event, @event.GetType(), _subscriptionInfo.JsonSerializerOptions);
+
     private static ResiliencePipeline CreateResiliencePipeline(int retryCount)
     {
         var retryOptions = new RetryStrategyOptions

@@ -1,15 +1,21 @@
-using MessageBus.RabbitMQ;
-using MessageBus.Extensions;
-using MessageBus.Events;
 using MessageBus.Abstractions;
+using MessageBus.Example.IntegrationEvents;
+using MessageBus.Extensions;
+using MessageBus.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.AddRabbitMqEventBus("eventbus")
-               .AddSubscription<OrderCreated, OrderCreatedEventHandler>();
+builder.AddRabbitMqEventBus(connectionFactory =>
+{
+    connectionFactory.HostName = "localhost";
+    connectionFactory.Port = 5672;
+    connectionFactory.UserName = "user";
+    connectionFactory.Password = "password";
+})
+.AddSubscription<OrderCreated, OrderCreatedEventHandler>();
 
 var app = builder.Build();
 
@@ -32,16 +38,11 @@ app.MapGet("/home", async () =>
 
 app.Run();
 
-
-public record OrderCreated(int OrderId, string data) : IntegrationEvent;
-
-public class OrderCreatedEventHandler(
-    ILogger<OrderCreatedEventHandler> logger) :
-    IIntegrationEventHandler<OrderCreated>
+public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger) : IIntegrationEventHandler<OrderCreated>
 {
     public async Task Handle(OrderCreated @event)
     {
-        logger.LogInformation("Handling integration orderCreated: {IntegrationEventId} - ({@IntegrationEvent})", @event.Id, @event);
+        logger.LogInformation("Handling event: {@IntegrationEvent}", @event);
         await Task.Delay(100);
         Console.WriteLine(@event.data);
     }
