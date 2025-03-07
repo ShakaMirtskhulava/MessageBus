@@ -27,7 +27,7 @@ public sealed class RabbitMQEventBus(
     private IConnection? _rabbitMQConnection;
     private IChannel? _consumerChannel;
 
-    public bool IsConnected => _rabbitMQConnection?.IsOpen ?? false;
+    public bool IsReady => _rabbitMQConnection?.IsOpen ?? false;
 
     public Task StartAsync(CancellationToken cancellationToken)
     {

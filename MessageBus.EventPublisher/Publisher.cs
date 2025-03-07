@@ -28,7 +28,7 @@ public class Publisher : BackgroundService
         {
             using var scope = _serviceProvider.CreateScope();
             var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
-            while (!eventBus.IsConnected)
+            while (!eventBus.IsReady)
             {
                 Console.WriteLine("Publisher is waiting for connection to RabbitMQ");
                 await Task.Delay(100);
