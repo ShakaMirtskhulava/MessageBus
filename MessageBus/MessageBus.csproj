@@ -4,7 +4,41 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>SHAKA.MessageBus</PackageId>
+    <Title>SHAKA MessageBus</Title>
+    <Authors>ShakaMirtskhulava</Authors>
+    <Company>LAM</Company>
+    <Product>SHAKA MessageBus</Product>
+    <Description>A flexible and extensible abstraction for implementing message bus patterns in .NET applications. This package provides a unified interface for various messaging solutions, enabling seamless communication between different components or services in your system. Easily integrate with existing message brokers or create custom implementations, and decouple your application's architecture for greater scalability and maintainability.
+
+</Description>
+    <Copyright>Copyright: © SHAKA 2025, All rights reserved. Unauthorized use, duplication, or distribution of this package without permission is prohibited.</Copyright>
+    <PackageIcon>MessageBusIcon.png</PackageIcon>
+    <RepositoryUrl>https://github.com/ShakaMirtskhulava/MessageBus</RepositoryUrl>
+    <AssemblyVersion>1.1.1.2</AssemblyVersion>
+    <FileVersion>1.1.1.2</FileVersion>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageLicenseFile>Licence.txt</PackageLicenseFile>
+    <PackageTags>MessageBus, MessageQueue, Queue, Bus</PackageTags>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <PackageReadmeFile>MessageBusReadme.md</PackageReadmeFile>
+    <Version>1.0.1</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\..\..\Licence.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\..\..\..\MessageBusIcon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\..\..\..\MessageBusReadme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.2" />
