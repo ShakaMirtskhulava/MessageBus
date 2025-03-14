@@ -5,9 +5,9 @@ namespace MessageBus.EventHandler.OrderHandlers;
 
 public class OrderUpdatedHandler : IIntegrationEventHandler<OrderUpdated>
 {
-    public async Task Handle(OrderUpdated @event)
+    public Task Handle(OrderUpdated @event)
     {
         Console.WriteLine("Handling the order updated");
-        await Task.Delay(100);
+        return Task.CompletedTask;
     }
 }

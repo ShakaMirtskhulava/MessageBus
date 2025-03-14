@@ -5,9 +5,9 @@ namespace MessageBus.EventHandler.OrderHandlers;
 
 public class OrderDeletedHandler : IIntegrationEventHandler<OrderDeleted>
 {
-    public async Task Handle(OrderDeleted @event)
+    public Task Handle(OrderDeleted @event)
     {
         Console.WriteLine("Handling the order deleted");
-        await Task.Delay(100);
+        return Task.CompletedTask;
     }
 }

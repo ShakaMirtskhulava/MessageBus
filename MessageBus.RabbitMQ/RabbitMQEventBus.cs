@@ -26,6 +26,8 @@ public sealed class RabbitMQEventBus(
     private readonly EventBusSubscriptionInfo _subscriptionInfo = subscriptionOptions.Value;
     private IConnection? _rabbitMQConnection;
     private IChannel? _consumerChannel;
+    //Max number of unconfirmed messages
+    private const int MAX_OUTSTANDING_CONFIRMS = 1000;
 
     public bool IsReady => _rabbitMQConnection?.IsOpen ?? false;
 
@@ -97,7 +99,15 @@ public sealed class RabbitMQEventBus(
         var exchangeName = eventType.FullName!;
         var routingKey = eventType.Name!;
 
-        using var channel = await _rabbitMQConnection!.CreateChannelAsync() ?? throw new InvalidOperationException("RabbitMQ connection is not open");
+        //Allow up to MAX_OUTSTANDING_CONFIRMS outstanding publisher confirmations at a time
+        CreateChannelOptions channelOpts = new(
+            publisherConfirmationsEnabled: true,
+            publisherConfirmationTrackingEnabled: true,
+            outstandingPublisherConfirmationsRateLimiter: new ThrottlingRateLimiter(MAX_OUTSTANDING_CONFIRMS)
+        );
+
+        using var channel = await _rabbitMQConnection!.CreateChannelAsync(channelOpts) 
+            ?? throw new InvalidOperationException("RabbitMQ connection is not open");
 
         await channel.ExchangeDeclareAsync(exchange: exchangeName, type: "direct");
 
@@ -112,10 +122,12 @@ public sealed class RabbitMQEventBus(
                         routingKey: routingKey,
                         mandatory: true,
                         body: body);
+
+                logger.LogTrace($"Following event was published in RabbitMQ: {@event}");
             }
             catch (Exception ex)
             {
-                logger.LogTrace("Exception occurred when publishing the event with Id: {EventId} in RabbitMQ, with message: {@exceptionMessage}", @event.Id, ex.Message);
+                logger.LogError("Exception occurred when publishing the event with Id: {EventId} in RabbitMQ, with message: {@exceptionMessage}", @event.Id, ex.Message);
                 throw;
             }
         });

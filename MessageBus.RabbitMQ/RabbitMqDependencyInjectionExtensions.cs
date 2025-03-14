@@ -8,7 +8,7 @@ namespace MessageBus.RabbitMQ;
 
 public static class RabbitMqDependencyInjectionExtensions
 {
-    private const string SectionName = "EventBus";
+    private const string EventBus = nameof(EventBus);
 
     public static IEventBusBuilder AddRabbitMqEventBus(this IHostApplicationBuilder builder, Action<ConnectionFactory> configureConnectionFactory)
     {
@@ -23,7 +23,7 @@ public static class RabbitMqDependencyInjectionExtensions
 
         builder.Services.AddSingleton(connectionFactory);
 
-        builder.Services.Configure<EventBusOptions>(builder.Configuration.GetSection(SectionName));
+        builder.Services.Configure<EventBusOptions>(builder.Configuration.GetSection(EventBus));
 
         builder.Services.AddSingleton<IEventBus, RabbitMQEventBus>();
         builder.Services.AddSingleton<IHostedService>(sp => (RabbitMQEventBus)sp.GetRequiredService<IEventBus>());
@@ -44,7 +44,7 @@ public static class RabbitMqDependencyInjectionExtensions
 
         serviceProvider.AddSingleton(connectionFactory);
 
-        serviceProvider.Configure<EventBusOptions>(configuration.GetSection(SectionName));
+        serviceProvider.Configure<EventBusOptions>(configuration.GetSection(EventBus));
 
         serviceProvider.AddSingleton<IEventBus, RabbitMQEventBus>();
         serviceProvider.AddSingleton<IHostedService>(sp => (RabbitMQEventBus)sp.GetRequiredService<IEventBus>());
