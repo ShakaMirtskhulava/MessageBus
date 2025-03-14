@@ -8,8 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="SHAKA.MessageBus.RabbitMQ" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\IntegrationEvents\MessageBus.Example.IntegrationEvents.csproj" />
-    <ProjectReference Include="..\MessageBus.RabbitMQ\MessageBus.RabbitMQ.csproj" />
   </ItemGroup>
 
   <ItemGroup>
