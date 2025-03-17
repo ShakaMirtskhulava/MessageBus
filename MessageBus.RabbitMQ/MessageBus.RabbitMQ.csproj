@@ -56,7 +56,7 @@ RabbitMQ server running and accessible from your application.</Description>
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
     <PackageReference Include="Polly.Core" Version="8.5.2" />
     <PackageReference Include="RabbitMQ.Client" Version="7.1.1" />
-    <PackageReference Include="SHAKA.MessageBus" Version="1.0.0" />
+	<PackageReference Include="SHAKA.MessageBus" Version="1.0.6" />
   </ItemGroup>
 
 </Project>
