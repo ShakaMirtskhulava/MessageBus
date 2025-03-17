@@ -21,11 +21,11 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
             .ToArray();
     }
 
-    public async Task<IEnumerable<IIntegrationEventLogEntry>> RetrievePendingEventLogs(Guid transactionId, CancellationToken cancellationToken)
+    public async Task<IEnumerable<IIntegrationEventLog>> RetrievePendingEventLogs(CancellationToken cancellationToken)
     {
-        var result = await _context.Set<IntegrationEventLogEntry>()
-            .Where(e => e.TransactionId == transactionId && e.State == EventStateEnum.NotPublished)
-            .ToListAsync(cancellationToken);
+        var result = await _context.Set<EFCoreIntegrationEventLog>()
+                                   .Where(e => e.State == EventStateEnum.NotPublished)
+                                   .ToListAsync(cancellationToken);
 
         if (result.Count != 0)
         {
@@ -36,41 +36,36 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
         return [];
     }
 
-    public async Task SaveEventAsync(IIntegrationEventLogEntry @event, CancellationToken cancellationToken)
+    public async Task<TIntegrationEventLog> SaveEvent<TIntegrationEventLog>(IntegrationEvent @event, CancellationToken cancellationToken) 
+        where TIntegrationEventLog : class, IIntegrationEventLog
     {
-        _context.Set<IIntegrationEventLogEntry>().Add(@event);
+        var integrationEventLog = new EFCoreIntegrationEventLog(@event) as TIntegrationEventLog;
+        if (integrationEventLog is null)
+            throw new InvalidOperationException($"Cannot cast {nameof(integrationEventLog)} to {nameof(TIntegrationEventLog)}");
+
+        _context.Set<TIntegrationEventLog>().Add(integrationEventLog);
         await _context.SaveChangesAsync(cancellationToken);
+        return integrationEventLog;
     }
 
-    public async Task SaveEventAsync(IntegrationEvent @event, IDbContextTransaction transaction, CancellationToken cancellationToken)
-    {
-        if (transaction == null) 
-            throw new ArgumentNullException(nameof(transaction));
-
-        var eventLogEntry = new IntegrationEventLogEntry(@event, transaction.TransactionId);
-
-        _context.Database.UseTransaction(transaction.GetDbTransaction());
-        await SaveEventAsync(eventLogEntry,cancellationToken);
-    }
-
-    public async Task MarkEventAsPublishedAsync(Guid eventId, CancellationToken cancellationToken)
+    public async Task MarkEventAsPublished(Guid eventId, CancellationToken cancellationToken)
     {
         await UpdateEventStatus(eventId, EventStateEnum.Published,cancellationToken);
     }
 
-    public async Task MarkEventAsInProgressAsync(Guid eventId, CancellationToken cancellationToken)
+    public async Task MarkEventAsInProgress(Guid eventId, CancellationToken cancellationToken)
     {
         await UpdateEventStatus(eventId, EventStateEnum.InProgress,cancellationToken);
     }
 
-    public async Task MarkEventAsFailedAsync(Guid eventId, CancellationToken cancellationToken)
+    public async Task MarkEventAsFailed(Guid eventId, CancellationToken cancellationToken)
     {
         await UpdateEventStatus(eventId, EventStateEnum.PublishedFailed,cancellationToken);
     }
 
     private async Task UpdateEventStatus(Guid eventId, EventStateEnum status, CancellationToken cancellationToken)
     {
-        var eventLogEntry = _context.Set<IntegrationEventLogEntry>().Single(ie => ie.EventId == eventId);
+        var eventLogEntry = _context.Set<EFCoreIntegrationEventLog>().Single(ie => ie.EventId == eventId);
         eventLogEntry.State = status;
 
         if (status == EventStateEnum.InProgress)

@@ -4,9 +4,10 @@ namespace MessageBus.IntegrationEventLog;
 
 public interface IIntegrationEventLogService
 {
-    Task<IEnumerable<IIntegrationEventLogEntry>> RetrievePendingEventLogs(Guid transactionId,CancellationToken cancellationToken);
-    Task SaveEventAsync(IIntegrationEventLogEntry @event, CancellationToken cancellationToken);
-    Task MarkEventAsPublishedAsync(Guid eventId, CancellationToken cancellationToken);
-    Task MarkEventAsInProgressAsync(Guid eventId, CancellationToken cancellationToken);
-    Task MarkEventAsFailedAsync(Guid eventId, CancellationToken cancellationToken);
+    Task<IEnumerable<IIntegrationEventLog>> RetrievePendingEventLogs(CancellationToken cancellationToken);
+    Task<TIntegrationEventLog> SaveEvent<TIntegrationEventLog>(IntegrationEvent @event, CancellationToken cancellationToken)
+        where TIntegrationEventLog : class, IIntegrationEventLog;
+    Task MarkEventAsPublished(Guid eventId, CancellationToken cancellationToken);
+    Task MarkEventAsInProgress(Guid eventId, CancellationToken cancellationToken);
+    Task MarkEventAsFailed(Guid eventId, CancellationToken cancellationToken);
 }

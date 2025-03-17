@@ -2,7 +2,7 @@
 
 namespace MessageBus.IntegrationEventLog;
 
-public interface IIntegrationEventLogEntry
+public interface IIntegrationEventLog
 {
     Guid EventId { get; }
     string EventTypeName { get; }
@@ -12,6 +12,5 @@ public interface IIntegrationEventLogEntry
     int TimesSent { get; }
     DateTime CreationTime { get; }
     string Content { get; }
-    Guid TransactionId { get; }
-    IIntegrationEventLogEntry DeserializeJsonContent(Type type);
+    IIntegrationEventLog DeserializeJsonContent(Type type);
 }

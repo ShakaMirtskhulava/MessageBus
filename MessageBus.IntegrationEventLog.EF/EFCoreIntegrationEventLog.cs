@@ -6,15 +6,15 @@ using System.Text.Json;
 
 namespace MessageBus.IntegrationEventLog.EF;
 
-public class IntegrationEventLogEntry : IIntegrationEventLogEntry
+public class EFCoreIntegrationEventLog : IIntegrationEventLog
 {
     private static readonly JsonSerializerOptions s_indentedOptions = new() { WriteIndented = true };
     private static readonly JsonSerializerOptions s_caseInsensitiveOptions = new() { PropertyNameCaseInsensitive = true };
 
-    private IntegrationEventLogEntry() { }
+    private EFCoreIntegrationEventLog() { }
     
     [SetsRequiredMembers]
-    public IntegrationEventLogEntry(IntegrationEvent @event, Guid transactionId)
+    public EFCoreIntegrationEventLog(IntegrationEvent @event)
     {
         EventId = @event.Id;
         CreationTime = @event.CreationDate;
@@ -25,7 +25,6 @@ public class IntegrationEventLogEntry : IIntegrationEventLogEntry
         Content = JsonSerializer.Serialize(@event, @event.GetType(), s_indentedOptions);
         State = EventStateEnum.NotPublished;
         TimesSent = 0;
-        TransactionId = transactionId;
         IntegrationEvent = @event;
     }
     public Guid EventId { get; private set; }
@@ -40,9 +39,8 @@ public class IntegrationEventLogEntry : IIntegrationEventLogEntry
     public DateTime CreationTime { get; private set; }
     [Required]
     public required string Content { get; init; }
-    public Guid TransactionId { get; private set; }
 
-    public IIntegrationEventLogEntry DeserializeJsonContent(Type type)
+    public IIntegrationEventLog DeserializeJsonContent(Type type)
     {
         if(JsonSerializer.Deserialize(Content, type, s_caseInsensitiveOptions) is not IntegrationEvent integrationEvent)
             throw new InvalidOperationException($"Cannot deserialize content: {Content}");
