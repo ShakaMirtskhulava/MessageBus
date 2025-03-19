@@ -1,7 +1,9 @@
-﻿using MessageBus.RabbitMQ;
+﻿using MessageBus.Example.IntegrationEvents;
+using MessageBus.IntegrationEventLog.EF;
+using MessageBus.RabbitMQ;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 
 namespace MessageBus.EventPublisher;
 
@@ -17,6 +19,15 @@ public static class ServicesConfigurationExtensions
             connectionFactory.Password = "password";
         });
 
+        services.AddDbContext<AppDbContext>(options =>
+        {
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), opt =>
+            {
+                opt.EnableRetryOnFailure();
+            });
+        });
+        var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
+        services.ConfigureEFCoreIntegrationEventLogServices<AppDbContext>(eventTyepsAssemblyName);
         services.AddHostedService<Publisher>();
 
         return services;

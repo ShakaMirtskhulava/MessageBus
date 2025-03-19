@@ -1,4 +1,6 @@
 ﻿using MessageBus.Abstractions;
+using MessageBus.Example.IntegrationEvents;
+using MessageBus.IntegrationEventLog;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -17,8 +19,11 @@ public class Publisher : BackgroundService
     {
         try
         {
+            var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
             using var scope = _serviceProvider.CreateScope();
             var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
+            var integrationEventService = scope.ServiceProvider.GetRequiredService<IIntegrationEventService>();
+            var integrationEventLogService = scope.ServiceProvider.GetRequiredService<IIntegrationEventLogService>();
             while (!eventBus.IsReady)
             {
                 Console.WriteLine("Publisher is waiting for connection to RabbitMQ");
@@ -29,17 +34,18 @@ public class Publisher : BackgroundService
             {
                 try
                 {
-                    var eventsToPublish = await EventsDbContext.GetEventsToPublish(batchSize: 1000);
-                    
+                    //var eventsToPublish = await EventsDbContext.GetEventsToPublish(batchSize: 1000);
+                    var eventsToPublish = await integrationEventService.GetPendingEvents(1000, eventTyepsAssemblyName, stoppingToken);
                     foreach (var @event in eventsToPublish)
                     {
                         try
                         {
                             await eventBus.PublishAsync(@event);
-                            EventsDbContext.MarkEventAsPublished(@event.Id);
+                            await integrationEventLogService.MarkEventAsPublished(@event.Id,stoppingToken);
                         }
                         catch (Exception ex)
                         {
+                            await integrationEventLogService.MarkEventAsFailed(@event.Id, stoppingToken);
                             Console.Error.WriteLine($"Following event couldn't be published: {@event}");
                             Console.Error.WriteLine($"{DateTime.Now} [ERROR] saw nack or return, ex: {ex}");
                         }

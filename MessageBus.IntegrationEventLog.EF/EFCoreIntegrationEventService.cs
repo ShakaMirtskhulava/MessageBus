@@ -1,6 +1,7 @@
 ﻿using MessageBus.Abstractions;
 using MessageBus.Events;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 namespace MessageBus.IntegrationEventLog.EF;
 
@@ -18,6 +19,25 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
         _unitOfWork = unitOfWork;
         _integrationEventLogService = integrationEventLogService;
         _eventBus = eventBus;
+    }
+
+    public async Task<IEnumerable<IntegrationEvent>> GetPendingEvents(int batchSize, string eventTyepsAssemblyName, CancellationToken cancellationToken)
+    {
+        //TODO: Retrieve the types of all the existing events here 
+        //SO for each event log, we can deserialize the content to the correct type
+        //And don't have to use reflection to get the type for each event log
+        var assembly = Assembly.Load(eventTyepsAssemblyName);
+        var pendingEventLogs = await _integrationEventLogService.RetrievePendingEventLogs(batchSize, cancellationToken);
+        if (pendingEventLogs.Any())
+        {
+            foreach (var pendingEventLog in pendingEventLogs)
+            {
+                var eventType = assembly.GetType(pendingEventLog.EventTypeName);
+                pendingEventLog.DeserializeJsonContent(eventType!);
+            }
+        }
+            
+        return pendingEventLogs.Select(e => e.IntegrationEvent).ToList();
     }
 
     public async Task<IntegrationEvent> SaveAndPublish(IntegrationEvent evt,CancellationToken cancellationToken)

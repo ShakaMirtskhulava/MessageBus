@@ -20,7 +20,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         opt.EnableRetryOnFailure();
     });
 });
-builder.Services.ConfigureEFCoreIntegrationEventLogServices<AppDbContext>();
+var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName;
+builder.Services.ConfigureEFCoreIntegrationEventLogServices<AppDbContext>(eventTyepsAssemblyName);
 
 builder.AddRabbitMqEventBus(connectionFactory =>
 {
@@ -50,7 +51,8 @@ app.MapPost("/order", async (OrderRequest order,CancellationToken cancellationTo
     Order newOrder = new() { Data = order.Data };
     var addedOrder = await dbContext.Orders.AddAsync(newOrder);
     OrderCreated? orderCreated = new(addedOrder.Entity.Id, addedOrder.Entity.Data);
-    var @event = await integrationEventService.SaveAndPublish(orderCreated, cancellationToken);
+    //var @event = await integrationEventService.SaveAndPublish(orderCreated, cancellationToken);
+    var @event = await integrationEventService.Save(orderCreated, cancellationToken);
 })
 .WithName("order")
 .WithOpenApi();

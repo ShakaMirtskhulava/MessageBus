@@ -16,9 +16,14 @@ public static class EfCoreIntegrationLogExtensions
         });
     }
 
-    public static void ConfigureEFCoreIntegrationEventLogServices<TContext>(this IServiceCollection services) where TContext : DbContext
+    public static void ConfigureEFCoreIntegrationEventLogServices<TContext>(this IServiceCollection services, string eventTyepsAssemblyName) where TContext : DbContext
     {
-        services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
+        services.AddScoped<IIntegrationEventLogService>(provider =>
+        {
+            var scope = provider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<TContext>();
+            return new EFIntegrationEventLogService<TContext>(dbContext, eventTyepsAssemblyName);
+        });
         services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
         services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>();
     }

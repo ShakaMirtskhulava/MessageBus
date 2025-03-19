@@ -42,9 +42,11 @@ public class EFCoreIntegrationEventLog : IIntegrationEventLog
 
     public IIntegrationEventLog DeserializeJsonContent(Type type)
     {
-        if(JsonSerializer.Deserialize(Content, type, s_caseInsensitiveOptions) is not IntegrationEvent integrationEvent)
+        var deserializationResult = JsonSerializer.Deserialize(Content, type, s_caseInsensitiveOptions);
+        if (deserializationResult is not Events.IntegrationEvent)
             throw new InvalidOperationException($"Cannot deserialize content: {Content}");
-        IntegrationEvent = integrationEvent;
+        var integrationEvent = deserializationResult as IntegrationEvent;
+        IntegrationEvent = integrationEvent!;
         return this;
     }
 }

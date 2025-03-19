@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\IntegrationEvents\MessageBus.Example.IntegrationEvents.csproj" />
+    <ProjectReference Include="..\MessageBus.IntegrationEventLog.EF\MessageBus.IntegrationEventLog.EF.csproj" />
   </ItemGroup>
 
   <ItemGroup>

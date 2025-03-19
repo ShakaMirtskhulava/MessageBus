@@ -4,7 +4,7 @@ namespace MessageBus.IntegrationEventLog;
 
 public interface IIntegrationEventLogService
 {
-    Task<IEnumerable<IIntegrationEventLog>> RetrievePendingEventLogs(CancellationToken cancellationToken);
+    Task<IEnumerable<IIntegrationEventLog>> RetrievePendingEventLogs(int batchSize, CancellationToken cancellationToken);
     Task<TIntegrationEventLog> SaveEvent<TIntegrationEventLog>(IntegrationEvent @event, CancellationToken cancellationToken)
         where TIntegrationEventLog : class, IIntegrationEventLog;
     Task MarkEventAsPublished(Guid eventId, CancellationToken cancellationToken);

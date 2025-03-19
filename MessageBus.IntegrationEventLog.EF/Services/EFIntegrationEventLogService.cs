@@ -11,28 +11,23 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
     private readonly TContext _context;
     private readonly Type[] _eventTypes;
 
-    public EFIntegrationEventLogService(TContext context)
+    public EFIntegrationEventLogService(TContext context, string eventTyepsAssemblyName)
     {
         _context = context;
-        _eventTypes = Assembly.Load(Assembly.GetEntryAssembly()!.FullName!)
+        _eventTypes = Assembly.Load(eventTyepsAssemblyName)
             .GetTypes()
             .Where(t => t.Name.EndsWith(nameof(IntegrationEvent)))
             .ToArray();
     }
 
-    public async Task<IEnumerable<IIntegrationEventLog>> RetrievePendingEventLogs(CancellationToken cancellationToken)
+    public async Task<IEnumerable<IIntegrationEventLog>> RetrievePendingEventLogs(int batchSize,CancellationToken cancellationToken)
     {
         var result = await _context.Set<EFCoreIntegrationEventLog>()
                                    .Where(e => e.State == EventStateEnum.NotPublished)
+                                   .OrderBy(e => e.CreationTime)
                                    .ToListAsync(cancellationToken);
 
-        if (result.Count != 0)
-        {
-            return result.OrderBy(o => o.CreationTime)
-                .Select(e => e.DeserializeJsonContent(_eventTypes.First(t => t.Name == e.EventTypeShortName)));
-        }
-
-        return [];
+        return result;
     }
 
     public async Task<TIntegrationEventLog> SaveEvent<TIntegrationEventLog>(IntegrationEvent @event, CancellationToken cancellationToken) 
