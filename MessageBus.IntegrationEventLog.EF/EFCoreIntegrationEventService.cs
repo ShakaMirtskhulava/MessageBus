@@ -54,4 +54,41 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
 
         return @event;
     }
+
+    public async Task<IntegrationEvent> Save(IntegrationEvent evt, CancellationToken cancellationToken)
+    {
+        return await _unitOfWork.ExecuteOnDefaultStarategy(async () =>
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                await _integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(evt, cancellationToken);
+                await transaction.CommitAsync();
+                return evt;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
+    }
+
+    public async Task Publish(IntegrationEvent evt, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _integrationEventLogService.MarkEventAsInProgress(evt.Id, cancellationToken);
+            await _eventBus.PublishAsync(evt!);
+            await _integrationEventLogService.MarkEventAsPublished(evt.Id, cancellationToken);
+        }
+        catch
+        {
+            await _integrationEventLogService.MarkEventAsFailed(evt.Id, cancellationToken);
+            throw;
+        }
+    }
+
 }

@@ -1,6 +1,5 @@
 ﻿using MessageBus.Events;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using System.Reflection;
 
 namespace MessageBus.IntegrationEventLog.EF.Services;
@@ -73,7 +72,6 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
 
         await _context.SaveChangesAsync(cancellationToken);
     }
-
     protected virtual void Dispose(bool disposing)
     {
         if (!_disposedValue)
@@ -83,7 +81,6 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
             _disposedValue = true;
         }
     }
-
     public void Dispose()
     {
         Dispose(disposing: true);
