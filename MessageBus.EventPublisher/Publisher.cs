@@ -36,7 +36,7 @@ public class Publisher : BackgroundService
                         try
                         {
                             await eventBus.PublishAsync(@event);
-                            await EventsDbContext.MarkEventAsPublished(@event.Id);
+                            EventsDbContext.MarkEventAsPublished(@event.Id);
                         }
                         catch (Exception ex)
                         {

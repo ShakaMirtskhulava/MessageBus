@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MessageBus.Client.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250317182950_TestMig")]
-    partial class TestMig
+    [Migration("20250319053050_TestMig4")]
+    partial class TestMig4
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,11 +27,9 @@ namespace MessageBus.Client.Migrations
 
             modelBuilder.Entity("MessageBus.Client.Models.Order", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Data")
                         .IsRequired()
@@ -42,7 +40,7 @@ namespace MessageBus.Client.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("MessageBus.EFCoreIntegrationEventLog.EF.EFCoreIntegrationEventLog", b =>
+            modelBuilder.Entity("MessageBus.IntegrationEventLog.EF.EFCoreIntegrationEventLog", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
@@ -64,9 +62,6 @@ namespace MessageBus.Client.Migrations
 
                     b.Property<int>("TimesSent")
                         .HasColumnType("int");
-
-                    b.Property<Guid>("TransactionId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("EventId");
 

@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MessageBus.IntegrationEventLog.EF;
 
-public static class IntegrationLogExtensions
+public static class EfCoreIntegrationLogExtensions
 {
     public static void UseIntegrationEventLogs(this ModelBuilder builder)
     {
@@ -20,6 +20,7 @@ public static class IntegrationLogExtensions
     {
         services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
         services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
+        services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>();
     }
 
 }

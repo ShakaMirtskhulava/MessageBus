@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MessageBus.Client.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class TestMig4 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,20 +20,18 @@ namespace MessageBus.Client.Migrations
                     State = table.Column<int>(type: "int", nullable: false),
                     TimesSent = table.Column<int>(type: "int", nullable: false),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    TransactionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_IntegrationEventLog", x => x.EventId);
+                    table.PrimaryKey("PK_EFCoreIntegrationEventLog", x => x.EventId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Data = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>

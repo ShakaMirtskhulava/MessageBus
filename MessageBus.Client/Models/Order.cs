@@ -5,7 +5,7 @@ namespace MessageBus.Client.Models;
 public class Order
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     [Required]
     public required string Data { get; set; }
 }

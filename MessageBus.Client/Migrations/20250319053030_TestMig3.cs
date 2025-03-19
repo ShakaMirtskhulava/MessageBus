@@ -5,7 +5,7 @@
 namespace MessageBus.Client.Migrations
 {
     /// <inheritdoc />
-    public partial class RenameTable : Migration
+    public partial class TestMig3 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

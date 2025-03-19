@@ -21,4 +21,8 @@
     <ProjectReference Include="..\MessageBus.IntegrationEventLog.EF\MessageBus.IntegrationEventLog.EF.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
 </Project>

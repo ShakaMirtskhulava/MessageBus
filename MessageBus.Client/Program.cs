@@ -45,44 +45,12 @@ app.MapPost("/order", async (OrderRequest order,CancellationToken cancellationTo
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-    var integrationEventLogService = scope.ServiceProvider.GetRequiredService<IIntegrationEventLogService>();
+    var integrationEventService = scope.ServiceProvider.GetRequiredService<IIntegrationEventService>();
 
     Order newOrder = new() { Data = order.Data };
     var addedOrder = await dbContext.Orders.AddAsync(newOrder);
-    OrderCreated? orderCreated = null;
-    var orderCreateEventLog = await unitOfWork.ExecuteOnDefaultStarategy(async () =>
-    {
-        await using var transaction = await dbContext.Database.BeginTransactionAsync();
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-            orderCreated = new(addedOrder.Entity.Id, addedOrder.Entity.Data);
-            await integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(orderCreated, cancellationToken);
-            await transaction.CommitAsync();
-            return orderCreated;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            await transaction.RollbackAsync();
-            throw;
-        }
-    });
-
-    var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
-    try
-    {
-        await integrationEventLogService.MarkEventAsInProgress(orderCreateEventLog.Id, cancellationToken);
-        await eventBus.PublishAsync(orderCreated!);
-        await integrationEventLogService.MarkEventAsPublished(orderCreateEventLog.Id, cancellationToken);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine(ex.Message);
-        await integrationEventLogService.MarkEventAsFailed(orderCreateEventLog.Id, cancellationToken);
-    }
-
+    OrderCreated? orderCreated = new(addedOrder.Entity.Id, addedOrder.Entity.Data);
+    var @event = await integrationEventService.SaveAndPublish(orderCreated, cancellationToken);
 })
 .WithName("order")
 .WithOpenApi();
