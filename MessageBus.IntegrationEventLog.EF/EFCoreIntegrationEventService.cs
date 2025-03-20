@@ -40,21 +40,27 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
         return pendingEventLogs.Select(e => e.IntegrationEvent).ToList();
     }
 
-    public async Task<IntegrationEvent> SaveAndPublish(IntegrationEvent evt,CancellationToken cancellationToken)
+    public async Task<IntegrationEvent> SaveAndPublish<TEntity, TEntityKey>(TEntity entity, IntegrationEvent evt,CancellationToken cancellationToken) 
+        where TEntity : class,IEntity<TEntityKey>
+        where TEntityKey : struct, IEquatable<TEntityKey>
     {
-        var @event = await Save(evt, cancellationToken);
+        var @event = await Save<TEntity,TEntityKey>(entity,evt, cancellationToken);
         await Publish(@event, cancellationToken);
         return @event;
     }
 
-    public async Task<IntegrationEvent> Save(IntegrationEvent evt, CancellationToken cancellationToken)
+    public async Task<IntegrationEvent> Save<TEntity, TEntityKey>(TEntity entity,IntegrationEvent evt, CancellationToken cancellationToken)
+        where TEntity : class, IEntity<TEntityKey>
+        where TEntityKey : struct, IEquatable<TEntityKey>
     {
         return await _unitOfWork.ExecuteOnDefaultStarategy(async () =>
         {
             await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
+                var insertedEntity = await _dbContext.Set<TEntity>().AddAsync(entity, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
+                evt.EntityId = insertedEntity.Entity.Id;
                 await _integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(evt, cancellationToken);
                 await transaction.CommitAsync();
                 return evt;

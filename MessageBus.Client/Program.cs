@@ -20,7 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         opt.EnableRetryOnFailure();
     });
 });
-var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName;
+var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
 builder.Services.ConfigureEFCoreIntegrationEventLogServices<AppDbContext>(eventTyepsAssemblyName);
 
 builder.AddRabbitMqEventBus(connectionFactory =>
@@ -30,7 +30,8 @@ builder.AddRabbitMqEventBus(connectionFactory =>
     connectionFactory.UserName = "user";
     connectionFactory.Password = "password";
 })
-.AddSubscription<OrderCreated, OrderCreatedEventHandler>();
+.AddSubscription<OrderCreated, OrderCreatedEventHandler>()
+.AddSubscription<ToastCreated, ToastCreatedEventHandler>();
 
 var app = builder.Build();
 
@@ -45,16 +46,27 @@ app.UseHttpsRedirection();
 app.MapPost("/order", async (OrderRequest order,CancellationToken cancellationToken) =>
 {
     using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var integrationEventService = scope.ServiceProvider.GetRequiredService<IIntegrationEventService>();
 
     Order newOrder = new() { Data = order.Data };
-    var addedOrder = await dbContext.Orders.AddAsync(newOrder);
-    OrderCreated? orderCreated = new(addedOrder.Entity.Id, addedOrder.Entity.Data);
-    //var @event = await integrationEventService.SaveAndPublish(orderCreated, cancellationToken);
-    var @event = await integrationEventService.Save(orderCreated, cancellationToken);
+    OrderCreated? orderCreated = new(newOrder.Id, order.Data);
+    var @event = await integrationEventService.SaveAndPublish<Order,Guid>(newOrder, orderCreated, cancellationToken);
+    //var @event = await integrationEventService.Save(toastCreated, cancellationToken);
 })
 .WithName("order")
+.WithOpenApi();
+
+app.MapPost("/toast", async (ToastRequest toast, CancellationToken cancellationToken) =>
+{
+    using var scope = app.Services.CreateScope();
+    var integrationEventService = scope.ServiceProvider.GetRequiredService<IIntegrationEventService>();
+
+    Toast newToast = new() { Data = toast.Data };
+    ToastCreated toastCreated = new(newToast.Id, newToast.Data);
+    var @event = await integrationEventService.SaveAndPublish<Toast, int>(newToast, toastCreated, cancellationToken);
+    //var @event = await integrationEventService.Save(toastCreated, cancellationToken);
+})
+.WithName("toast")
 .WithOpenApi();
 
 app.Run();
@@ -64,6 +76,15 @@ public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger) 
     public async Task Handle(OrderCreated @event)
     {
         logger.LogInformation("Handling order created event");
+        await Task.Delay(100);
+    }
+}
+
+public class ToastCreatedEventHandler(ILogger<ToastCreatedEventHandler> logger) : IIntegrationEventHandler<ToastCreated>
+{
+    public async Task Handle(ToastCreated @event)
+    {
+        logger.LogInformation("Handling toast created event");
         await Task.Delay(100);
     }
 }

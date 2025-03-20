@@ -12,7 +12,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="SHAKA.MessageBus.RabbitMQ" Version="1.0.2" />
+    <PackageReference Include="SHAKA.MessageBus.RabbitMQ" Version="1.0.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 

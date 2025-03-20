@@ -7,11 +7,13 @@ namespace MessageBus.IntegrationEventLog.EF;
 
 public static class EfCoreIntegrationLogExtensions
 {
+    const string INTEGRATION_EVNET_LOG_TABLE_NAME = "IntegrationEventLogs";
+
     public static void UseIntegrationEventLogs(this ModelBuilder builder)
     {
         builder.Entity<EFCoreIntegrationEventLog>(builder =>
         {
-            builder.ToTable(nameof(EFCoreIntegrationEventLog));
+            builder.ToTable(INTEGRATION_EVNET_LOG_TABLE_NAME);
 
             builder.HasKey(e => e.EventId);
         });

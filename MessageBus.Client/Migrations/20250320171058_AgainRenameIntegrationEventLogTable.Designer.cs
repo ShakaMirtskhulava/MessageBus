@@ -4,6 +4,7 @@ using MessageBus.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MessageBus.Client.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250320171058_AgainRenameIntegrationEventLogTable")]
+    partial class AgainRenameIntegrationEventLogTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,23 +40,6 @@ namespace MessageBus.Client.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("MessageBus.Client.Models.Toast", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Data")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Toasts");
-                });
-
             modelBuilder.Entity("MessageBus.IntegrationEventLog.EF.EFCoreIntegrationEventLog", b =>
                 {
                     b.Property<Guid>("EventId")
@@ -67,9 +53,8 @@ namespace MessageBus.Client.Migrations
                     b.Property<DateTime>("CreationTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("EntityId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("EventTypeName")
                         .IsRequired()
