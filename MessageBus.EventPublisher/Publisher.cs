@@ -8,6 +8,7 @@ namespace MessageBus.EventPublisher;
 
 public class Publisher : BackgroundService
 {
+    const int DELAY = 200;
     private readonly IServiceProvider _serviceProvider;
 
     public Publisher(IServiceProvider serviceProvider)
@@ -34,7 +35,6 @@ public class Publisher : BackgroundService
             {
                 try
                 {
-                    //var eventsToPublish = await EventsDbContext.GetEventsToPublish(batchSize: 1000);
                     var eventsToPublish = await integrationEventService.GetPendingEvents(1000, eventTyepsAssemblyName, stoppingToken);
                     foreach (var @event in eventsToPublish)
                     {
@@ -51,8 +51,10 @@ public class Publisher : BackgroundService
                         }
                     }
 
-                    if (!EventsDbContext.Any())
-                        await Task.Delay(100, stoppingToken);
+                    if (!eventsToPublish.Any()){
+                        Console.WriteLine($"No events to publish, publisher is waiting for: {DELAY}ms");
+                        await Task.Delay(DELAY, stoppingToken);
+                    }
                 }
                 catch (Exception ex)
                 {

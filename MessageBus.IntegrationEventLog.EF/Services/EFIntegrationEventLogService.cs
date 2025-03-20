@@ -1,6 +1,5 @@
 ﻿using MessageBus.Events;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 
 namespace MessageBus.IntegrationEventLog.EF.Services;
 
@@ -9,15 +8,10 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
 {
     private volatile bool _disposedValue;
     private readonly TContext _context;
-    private readonly Type[] _eventTypes;
 
-    public EFIntegrationEventLogService(TContext context, string eventTyepsAssemblyName)
+    public EFIntegrationEventLogService(TContext context)
     {
         _context = context;
-        _eventTypes = Assembly.Load(eventTyepsAssemblyName)
-            .GetTypes()
-            .Where(t => t.Name.EndsWith(nameof(IntegrationEvent)))
-            .ToArray();
     }
 
     public async Task<IEnumerable<IIntegrationEventLog>> RetrievePendingEventLogs(int batchSize,CancellationToken cancellationToken)
