@@ -8,7 +8,7 @@ namespace MessageBus.EventPublisher;
 
 public class Publisher : BackgroundService
 {
-    const int DELAY = 200;
+    const int DELAY = 1000;
     private readonly IServiceProvider _serviceProvider;
 
     public Publisher(IServiceProvider serviceProvider)
@@ -36,6 +36,8 @@ public class Publisher : BackgroundService
                 try
                 {
                     var eventsToPublish = await integrationEventService.GetPendingEvents(1000, eventTyepsAssemblyName, stoppingToken);
+                    if(eventsToPublish.Any())
+                        Console.WriteLine($"Publisher is going to publish {eventsToPublish.Count()} events");
                     foreach (var @event in eventsToPublish)
                     {
                         try

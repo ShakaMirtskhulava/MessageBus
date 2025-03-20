@@ -50,8 +50,8 @@ app.MapPost("/order", async (OrderRequest order,CancellationToken cancellationTo
 
     Order newOrder = new() { Data = order.Data };
     OrderCreated? orderCreated = new(newOrder.Id, order.Data);
-    var @event = await integrationEventService.SaveAndPublish<Order,Guid>(newOrder, orderCreated, cancellationToken);
-    //var @event = await integrationEventService.Save(toastCreated, cancellationToken);
+    //var @event = await integrationEventService.SaveAndPublish<Order,Guid>(newOrder, orderCreated, cancellationToken);
+    var @event = await integrationEventService.Save<Order, Guid>(newOrder, orderCreated, cancellationToken);
 })
 .WithName("order")
 .WithOpenApi();
