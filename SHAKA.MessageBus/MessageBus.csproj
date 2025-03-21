@@ -14,35 +14,49 @@
 </Description>
     <Copyright>Copyright: © SHAKA 2025, All rights reserved. Unauthorized use, duplication, or distribution of this package without permission is prohibited.</Copyright>
     <PackageIcon>MessageBusIcon.png</PackageIcon>
-    <RepositoryUrl>https://github.com/ShakaMirtskhulava/MessageBus</RepositoryUrl>
-    <AssemblyVersion>1.1.1.2</AssemblyVersion>
-    <FileVersion>1.1.1.2</FileVersion>
-    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <PackageLicenseFile>Licence.txt</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/ShakaMirtskhulava/SHAKA.MessageBus</RepositoryUrl>
     <PackageTags>MessageBus, MessageQueue, Queue, Bus</PackageTags>
-    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>MessageBusReadme.md</PackageReadmeFile>
-    <Version>1.0.1</Version>
+    <Version>1.0.9</Version>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageLicenseFile>MessageBusLicence.md</PackageLicenseFile>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="..\..\..\..\..\Licence.txt">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\..\..\..\..\MessageBusIcon.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\..\..\..\..\MessageBusReadme.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.2" />
 	<PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="MessageBusIcon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="MessageBusLicence.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="MessageBusReadme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="NugetStuff\MessageBusIcon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="NugetStuff\MessageBusLicence.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="NugetStuff\MessageBusReadme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

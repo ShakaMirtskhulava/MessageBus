@@ -1,0 +1,39 @@
+name: Publish to NuGet
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+    inputs:
+      version:
+        description: 'Version of the package'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest # Using Linux runner
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build project
+      run: dotnet build --configuration Release
+
+    - name: Pack project
+      run: |
+        echo "Packing version ${{ github.event.inputs.version }}"
+        dotnet pack --configuration Release /p:Version=${{ github.event.inputs.version }}
+
+    - name: Publish to NuGet
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: |
+        dotnet nuget push bin/Release/SHAKA.MessageBus.${{ github.event.inputs.version }}.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
