@@ -10,4 +10,6 @@ public interface IIntegrationEventLogService
     Task MarkEventAsPublished(Guid eventId, CancellationToken cancellationToken);
     Task MarkEventAsInProgress(Guid eventId, CancellationToken cancellationToken);
     Task MarkEventAsFailed(Guid eventId, CancellationToken cancellationToken);
+    Task<bool> FailedMessageChainExists(string? entityId, CancellationToken cancellationToken);
+    Task AddInFailedMessageChain(string? entityId, string body, Exception? exception, CancellationToken cancellationToken);
 }

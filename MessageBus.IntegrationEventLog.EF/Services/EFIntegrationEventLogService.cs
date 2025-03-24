@@ -1,5 +1,7 @@
 ﻿using MessageBus.Events;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Primitives;
+using System.Text;
 
 namespace MessageBus.IntegrationEventLog.EF.Services;
 
@@ -51,6 +53,65 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
         await UpdateEventStatus(eventId, EventStateEnum.PublishedFailed,cancellationToken);
     }
 
+    public async Task<bool> FailedMessageChainExists(string? entityId, CancellationToken cancellationToken)
+    {
+        entityId = entityId ?? "NoEntity";
+        return await _context.Set<FailedMessageChainEF>()
+                             .AnyAsync(fmc => fmc.EntityId == entityId)
+                             .ConfigureAwait(false);
+    }
+
+    public async Task AddInFailedMessageChain(string? entityId, string body, Exception? exception, CancellationToken cancellationToken)
+    {
+        FailedMessageChainEF? targetFiledMessageChain = null;
+        targetFiledMessageChain = await _context.Set<FailedMessageChainEF>()
+                                                .Include(fmc => fmc.FailedMessages)
+                                                .FirstOrDefaultAsync(fmc => fmc.EntityId == entityId, cancellationToken)
+                                                .ConfigureAwait(false);
+        if (targetFiledMessageChain is null)
+        {
+            targetFiledMessageChain = new()
+            {
+                EntityId = entityId ?? "NoEntity",
+                Version = 1,
+                FailedMessages = new List<FailedMessageEF>()
+                {
+                    new()
+                    {
+                        Body = body,
+                        Message = exception is not null ? GetFullExceptionMessage(exception) : null,
+                        StackTrace = exception is not null ? exception.StackTrace : null
+                    }
+                }
+            };
+            _context.Set<FailedMessageChainEF>().Add(targetFiledMessageChain);
+        }
+        else
+        {
+            targetFiledMessageChain.FailedMessages!.Add(new()
+            {
+                Body = body,
+                Message = exception is not null ? GetFullExceptionMessage(exception) : null,
+                StackTrace = exception is not null ? exception.StackTrace : null
+            });
+
+            _context.Set<FailedMessageChainEF>().Update(targetFiledMessageChain);
+        }
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private string GetFullExceptionMessage(Exception exception)
+    {
+        StringBuilder fullExceptionMessageBuilder = new(exception.Message);
+        Exception? innerException = exception.InnerException;
+        while (innerException is not null)
+        {
+            fullExceptionMessageBuilder.AppendLine(innerException.Message);
+            innerException = innerException.InnerException;
+        }
+        return fullExceptionMessageBuilder.ToString();
+    }
+
     private async Task UpdateEventStatus(Guid eventId, EventStateEnum status, CancellationToken cancellationToken)
     {
         var eventLogEntry = _context.Set<EFCoreIntegrationEventLog>().Single(ie => ie.EventId == eventId);
@@ -75,4 +136,5 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
+
 }

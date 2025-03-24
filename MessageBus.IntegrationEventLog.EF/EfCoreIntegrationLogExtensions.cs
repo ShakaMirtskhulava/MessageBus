@@ -8,6 +8,8 @@ namespace MessageBus.IntegrationEventLog.EF;
 public static class EfCoreIntegrationLogExtensions
 {
     const string INTEGRATION_EVNET_LOG_TABLE_NAME = "IntegrationEventLogs";
+    const string FAILED_MESSAGE_CHAIN_TABLE_NAME = "FailedMessageChains";
+    const string FAILED_MESSAGE_TABLE_NAME = "FailedMessages";
 
     public static void UseIntegrationEventLogs(this ModelBuilder builder)
     {
@@ -16,6 +18,24 @@ public static class EfCoreIntegrationLogExtensions
             builder.ToTable(INTEGRATION_EVNET_LOG_TABLE_NAME);
 
             builder.HasKey(e => e.EventId);
+        });
+
+        builder.Entity<FailedMessageChainEF>(builder =>
+        {
+            builder.ToTable(FAILED_MESSAGE_CHAIN_TABLE_NAME);
+            builder.HasKey(e => e.Id);
+            builder.HasIndex(e => e.EntityId)
+                   .IsUnique();
+            builder.HasMany(e => e.FailedMessages)
+                   .WithOne(fm => fm.FailedMessageChain)
+                   .HasForeignKey(e => e.FailedMessageChainId)
+                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<FailedMessageEF>(builder =>
+        {
+            builder.ToTable(FAILED_MESSAGE_TABLE_NAME);
+            builder.HasKey(e => e.Id);
         });
     }
 

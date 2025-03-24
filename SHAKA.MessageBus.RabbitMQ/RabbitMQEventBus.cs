@@ -1,5 +1,6 @@
 ﻿using MessageBus.Abstractions;
 using MessageBus.Events;
+using MessageBus.IntegrationEventLog;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -111,7 +112,7 @@ public sealed class RabbitMQEventBus(
 
         await channel.ExchangeDeclareAsync(exchange: exchangeName, type: "direct");
 
-        var body = SerializeMessage(@event);
+        var body = SerializeToUtf8Bytes(@event);
 
         await _pipeline.Execute(async () =>
         {
@@ -133,12 +134,16 @@ public sealed class RabbitMQEventBus(
         });
     }
 
-
     private async Task OnMessageReceived(object sender, BasicDeliverEventArgs eventArgs)
     {
         //Exchange name will match the event name
         var eventName = eventArgs.Exchange;
+
+        logger.LogInformation("Received message from event {EventName}", eventName);
+
         var message = Encoding.UTF8.GetString(eventArgs.Body.Span);
+
+        logger.LogTrace("Message: {Message}", message);
 
         try
         {
@@ -165,19 +170,43 @@ public sealed class RabbitMQEventBus(
             return;
         }
 
+        var integrationEventLogService = scope.ServiceProvider.GetRequiredService<IIntegrationEventLogService>();
+
         var integrationEvent = DeserializeMessage(message, eventType);
+        string? entityId = integrationEvent.EntityId?.ToString();
 
         logger.LogInformation("Processing event {EventName} with Id {EventId}", eventName, integrationEvent.Id);
 
         foreach (var handler in scope.ServiceProvider.GetKeyedServices<IIntegrationEventHandler>(eventType))
-            await handler.Handle(integrationEvent);
+        {
+            try
+            {
+                var failedMessageChainExists = await integrationEventLogService.FailedMessageChainExists(entityId, CancellationToken.None);
+                if (failedMessageChainExists)
+                {
+                    await integrationEventLogService.AddInFailedMessageChain(entityId, message, null, CancellationToken.None);
+                    logger.LogWarning("Failed message chain exists for entity {EntityId}, adding message to failed chain: {Message}", entityId, message);
+                    continue;
+                }
+
+                logger.LogTrace("Handling event {EventName} with Id {EventId} using handler {HandlerName}", eventName, integrationEvent.Id, handler.GetType().Name);
+                await handler.Handle(integrationEvent);
+                logger.LogTrace("Handled event {EventName} with Id {EventId} using handler {HandlerName}", eventName, integrationEvent.Id, handler.GetType().Name);
+            }
+            catch(Exception ex)
+            {
+                await integrationEventLogService.AddInFailedMessageChain(entityId, message, ex, CancellationToken.None);
+                logger.LogError("Error handling event {Event} with Id {EventId}, Exception: {Exception}", integrationEvent, integrationEvent.Id, ex);
+            }
+        }
     }
 
+    
     private IntegrationEvent DeserializeMessage(string message, Type eventType) =>
         JsonSerializer.Deserialize(message, eventType, _subscriptionInfo.JsonSerializerOptions) as IntegrationEvent
             ?? throw new Exception("Couldn't deserialize IntegrationEvent");
 
-    private byte[] SerializeMessage(IntegrationEvent @event) =>
+    private byte[] SerializeToUtf8Bytes(IntegrationEvent @event) =>
         JsonSerializer.SerializeToUtf8Bytes(@event, @event.GetType(), _subscriptionInfo.JsonSerializerOptions);
 
     private static ResiliencePipeline CreateResiliencePipeline(int retryCount)

@@ -45,7 +45,7 @@ RabbitMQ server running and accessible from your application.</Description>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SHAKA.MessageBus\MessageBus.csproj" />
+    <ProjectReference Include="..\MessageBus.IntegrationEventLog\MessageBus.IntegrationEventLog.csproj" />
   </ItemGroup>
 
   <ItemGroup>

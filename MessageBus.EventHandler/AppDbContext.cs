@@ -1,13 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+﻿using MessageBus.IntegrationEventLog;
 using MessageBus.IntegrationEventLog.EF;
-using MessageBus.IntegrationEventLog;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
-namespace MessageBus.EventPublisher;
+namespace MessageBus.EventHandler;
 
-class AppDbContext : DbContext
+public class AppDbContext : DbContext
 {
     public DbSet<Order> Orders { get; set; }
+    public DbSet<Toast> Toasts { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
