@@ -36,7 +36,7 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
                 pendingEventLog.DeserializeJsonContent(eventType);
             }
         }
-            
+        
         return pendingEventLogs.Select(e => e.IntegrationEvent).ToList();
     }
 

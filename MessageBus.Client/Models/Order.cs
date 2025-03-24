@@ -6,7 +6,7 @@ namespace MessageBus.Client.Models;
 public class Order : IEntity<Guid>
 {
     [Key]
-    public Guid Id { get; set; } = new();
+    public Guid Id { get; set; } = Guid.NewGuid();
     [Required]
     public required string Data { get; set; }
 }
