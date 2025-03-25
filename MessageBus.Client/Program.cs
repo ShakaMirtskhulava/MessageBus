@@ -3,7 +3,7 @@ using MessageBus.Client;
 using MessageBus.Client.Models;
 using MessageBus.Example.IntegrationEvents;
 using MessageBus.Extensions;
-using MessageBus.IntegrationEventLog;
+using MessageBus.IntegrationEventLog.Abstractions;
 using MessageBus.IntegrationEventLog.EF;
 using MessageBus.RabbitMQ;
 using Microsoft.EntityFrameworkCore;
@@ -22,13 +22,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
 
-PublisherOptions options = new(
-    delayMs: 1000, 
-    eventsBatchSize: 1000, 
-    failedMessageChainBatchSize: 100,
-    eventTyepsAssemblyName: eventTyepsAssemblyName);
-builder.Services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options);
-
 builder.AddRabbitMqEventBus(connectionFactory =>
 {
     connectionFactory.HostName = "localhost";
@@ -39,6 +32,16 @@ builder.AddRabbitMqEventBus(connectionFactory =>
 .AddSubscription<OrderCreated, OrderCreatedEventHandler>()
 .AddSubscription<OrderUpdated, OrderUpdatedEventHandler>()
 .AddSubscription<ToastCreated, ToastCreatedEventHandler>();
+
+builder.Services.ConfigureEventLogServices<AppDbContext>(eventTyepsAssemblyName);
+//builder.Services.ConfigureEFCoreEventLogServicesWithPublisher<AppDbContext>(options =>
+//    {
+//        options.DelayMs = 1000;
+//        options.EventsBatchSize = 1000;
+//        options.FailedMessageChainBatchSize = 100;
+//        options.EventTyepsAssemblyName = eventTyepsAssemblyName;
+//    }
+//);
 
 var app = builder.Build();
 

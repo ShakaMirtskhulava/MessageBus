@@ -1,10 +1,13 @@
 ﻿using MessageBus.Abstractions;
 using MessageBus.Events;
+using MessageBus.IntegrationEventLog.Abstractions;
+using MessageBus.IntegrationEventLog.EF.Models;
+using MessageBus.IntegrationEventLog.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
-namespace MessageBus.IntegrationEventLog.EF;
+namespace MessageBus.IntegrationEventLog.EF.Services;
 
 public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService where TContext : DbContext
 {

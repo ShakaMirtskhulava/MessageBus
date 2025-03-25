@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using MessageBus.IntegrationEventLog.EF;
-using MessageBus.IntegrationEventLog;
+using MessageBus.IntegrationEventLog.Models;
 
 namespace MessageBus.EventPublisher;
 

@@ -1,4 +1,4 @@
-﻿namespace MessageBus.IntegrationEventLog;
+﻿namespace MessageBus.IntegrationEventLog.Models;
 
 public enum EventStateEnum
 {

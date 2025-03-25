@@ -1,4 +1,4 @@
-﻿using MessageBus.IntegrationEventLog;
+﻿using MessageBus.IntegrationEventLog.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace MessageBus.Client.Models;
@@ -10,7 +10,6 @@ public class Order : IEntity<Guid>
     [Required]
     public required string Data { get; set; }
 }
-
 
 public class OrderRequest
 {

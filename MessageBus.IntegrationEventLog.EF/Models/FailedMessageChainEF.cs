@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MessageBus.IntegrationEventLog.Models;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MessageBus.IntegrationEventLog.EF;
+namespace MessageBus.IntegrationEventLog.EF.Models;
 
 public class FailedMessageChainEF : IFailedMessageChain<FailedMessageEF>
 {

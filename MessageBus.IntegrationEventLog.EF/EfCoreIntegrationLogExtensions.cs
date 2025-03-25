@@ -1,5 +1,8 @@
 ﻿using MessageBus.Abstractions;
+using MessageBus.IntegrationEventLog.Abstractions;
+using MessageBus.IntegrationEventLog.EF.Models;
 using MessageBus.IntegrationEventLog.EF.Services;
+using MessageBus.IntegrationEventLog.Publisher;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -61,14 +64,18 @@ public static class EfCoreIntegrationLogExtensions
         );
     }
 
-    public static void ConfigureEventLogServicesWithPublisher<TContext>(this IServiceCollection services, PublisherOptions options) 
+    public static void ConfigureEFCoreEventLogServicesWithPublisher<TContext>(this IServiceCollection services, Action<PublisherOptions> optionsAction) 
         where TContext : DbContext
     {
+        ArgumentNullException.ThrowIfNull(optionsAction);
+
+        PublisherOptions options = new();
+        optionsAction(options);
+
         services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
         services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
 
-        options = options with { eventTyepsAssemblyName = options.eventTyepsAssemblyName };
-        services.AddHostedService<Publisher>(provder => new(provder, options));
+        services.AddHostedService<Publisher.Publisher>(provder => new(provder, options));
         services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>(
             provider =>
             { 
@@ -79,7 +86,7 @@ public static class EfCoreIntegrationLogExtensions
                 var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<EFCoreIntegrationEventService<TContext>>>();
 
-                return new EFCoreIntegrationEventService<TContext>(dbContext, unitOfWork, integrationEventLogService, eventBus, options.eventTyepsAssemblyName, logger);
+                return new EFCoreIntegrationEventService<TContext>(dbContext, unitOfWork, integrationEventLogService, eventBus, options.EventTyepsAssemblyName, logger);
             }
         );
     }

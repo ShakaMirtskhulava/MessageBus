@@ -1,10 +1,10 @@
 ﻿using MessageBus.Abstractions;
 using MessageBus.Events;
+using MessageBus.IntegrationEventLog.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Threading;
 
-namespace MessageBus.IntegrationEventLog;
+namespace MessageBus.IntegrationEventLog.Publisher;
 
 public class Publisher : BackgroundService
 {
@@ -17,10 +17,10 @@ public class Publisher : BackgroundService
     public Publisher(IServiceProvider serviceProvider, PublisherOptions options)
     {
         _serviceProvider = serviceProvider;
-        _eventTyepsAssemblyName = options.eventTyepsAssemblyName;
-        _delay = options.delayMs;
-        _eventsBatchSize = options.eventsBatchSize;
-        _failedMessageChainBatchSize = options.failedMessageChainBatchSize;
+        _eventTyepsAssemblyName = options.EventTyepsAssemblyName;
+        _delay = options.DelayMs;
+        _eventsBatchSize = options.EventsBatchSize;
+        _failedMessageChainBatchSize = options.FailedMessageChainBatchSize;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

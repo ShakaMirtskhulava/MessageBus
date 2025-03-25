@@ -1,5 +1,5 @@
-﻿using MessageBus.IntegrationEventLog;
-using MessageBus.IntegrationEventLog.EF;
+﻿using MessageBus.IntegrationEventLog.EF;
+using MessageBus.IntegrationEventLog.Models;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 

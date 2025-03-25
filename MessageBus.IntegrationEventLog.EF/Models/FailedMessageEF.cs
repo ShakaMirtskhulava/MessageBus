@@ -1,9 +1,10 @@
 ﻿using MessageBus.Events;
+using MessageBus.IntegrationEventLog.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 
-namespace MessageBus.IntegrationEventLog.EF;
+namespace MessageBus.IntegrationEventLog.EF.Models;
 
 public class FailedMessageEF : IFailedMessage
 {
