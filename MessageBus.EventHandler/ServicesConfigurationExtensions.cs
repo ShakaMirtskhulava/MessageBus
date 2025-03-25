@@ -34,7 +34,7 @@ public static class ServicesConfigurationExtensions
         });
 
         var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
-        services.ConfigureEFCoreIntegrationEventLogServices<AppDbContext>(eventTyepsAssemblyName);
+        services.ConfigureEventLogServices<AppDbContext>(eventTyepsAssemblyName);
 
 
         return services;

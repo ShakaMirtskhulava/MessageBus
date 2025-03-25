@@ -43,13 +43,13 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
         return pendingEventLogs.Select(e => e.IntegrationEvent).ToList();
     }
 
-    public async Task<IEnumerable<IntegrationEvent>> RetriveFailedEventsToRepublish(int batchSize, CancellationToken cancellationToken)
+    public async Task<IEnumerable<IntegrationEvent>> RetriveFailedEventsToRepublish(int chainBatchSize, CancellationToken cancellationToken)
     {
         var chians = await _dbContext.Set<FailedMessageChainEF>()
                                    .Include(fmch => fmch.FailedMessages)
                                    .Where(e => e.ShouldRepublish)
                                    .OrderBy(e => e.CreationTime)
-                                   .Take(batchSize)
+                                   .Take(chainBatchSize)
                                    .ToListAsync(cancellationToken);
 
         List<IntegrationEvent> failedEvents = new();
@@ -75,15 +75,6 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return failedEvents;
-    }
-
-    public async Task<IntegrationEvent> SaveAndPublish<TEntity, TEntityKey>(TEntity entity, IntegrationEvent evt,CancellationToken cancellationToken) 
-        where TEntity : class,IEntity<TEntityKey>
-        where TEntityKey : struct, IEquatable<TEntityKey>
-    {
-        var @event = await Add<TEntity,TEntityKey>(entity,evt, cancellationToken);
-        await Publish(@event, cancellationToken);
-        return @event;
     }
 
     public async Task<IntegrationEvent> Add<TEntity, TEntityKey>(TEntity entity,IntegrationEvent evt, CancellationToken cancellationToken)
@@ -160,20 +151,4 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
             }
         });
     }
-
-    public async Task Publish(IntegrationEvent evt, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _integrationEventLogService.MarkEventAsInProgress(evt.Id, cancellationToken);
-            await _eventBus.PublishAsync(evt!);
-            await _integrationEventLogService.MarkEventAsPublished(evt.Id, cancellationToken);
-        }
-        catch
-        {
-            await _integrationEventLogService.MarkEventAsFailed(evt.Id, cancellationToken);
-            throw;
-        }
-    }
-
 }

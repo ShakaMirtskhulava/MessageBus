@@ -1,4 +1,5 @@
 ﻿using MessageBus.Example.IntegrationEvents;
+using MessageBus.IntegrationEventLog;
 using MessageBus.IntegrationEventLog.EF;
 using MessageBus.RabbitMQ;
 using Microsoft.EntityFrameworkCore;
@@ -27,8 +28,9 @@ public static class ServicesConfigurationExtensions
             });
         });
         var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
-        services.ConfigureEFCoreIntegrationEventLogServices<AppDbContext>(eventTyepsAssemblyName);
-        services.AddHostedService<Publisher>();
+
+        PublisherOptions options = new(delayMs:1000, eventsBatchSize: 1000, failedMessageChainBatchSize: 100,eventTyepsAssemblyName: eventTyepsAssemblyName);
+        services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options);
 
         return services;
     }

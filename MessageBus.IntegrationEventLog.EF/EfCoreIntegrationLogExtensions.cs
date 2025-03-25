@@ -40,10 +40,35 @@ public static class EfCoreIntegrationLogExtensions
         });
     }
 
-    public static void ConfigureEFCoreIntegrationEventLogServices<TContext>(this IServiceCollection services, string eventTyepsAssemblyName) where TContext : DbContext
+    public static void ConfigureEventLogServices<TContext>(this IServiceCollection services, string eventTyepsAssemblyName)
+        where TContext : DbContext
     {
         services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
         services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
+
+        services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>(
+            provider =>
+            {
+                var scope = provider.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<TContext>();
+                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                var integrationEventLogService = scope.ServiceProvider.GetRequiredService<IIntegrationEventLogService>();
+                var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<EFCoreIntegrationEventService<TContext>>>();
+
+                return new EFCoreIntegrationEventService<TContext>(dbContext, unitOfWork, integrationEventLogService, eventBus, eventTyepsAssemblyName, logger);
+            }
+        );
+    }
+
+    public static void ConfigureEventLogServicesWithPublisher<TContext>(this IServiceCollection services, PublisherOptions options) 
+        where TContext : DbContext
+    {
+        services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
+        services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
+
+        options = options with { eventTyepsAssemblyName = options.eventTyepsAssemblyName };
+        services.AddHostedService<Publisher>(provder => new(provder, options));
         services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>(
             provider =>
             { 
@@ -54,7 +79,7 @@ public static class EfCoreIntegrationLogExtensions
                 var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<EFCoreIntegrationEventService<TContext>>>();
 
-                return new EFCoreIntegrationEventService<TContext>(dbContext, unitOfWork, integrationEventLogService, eventBus, eventTyepsAssemblyName, logger);
+                return new EFCoreIntegrationEventService<TContext>(dbContext, unitOfWork, integrationEventLogService, eventBus, options.eventTyepsAssemblyName, logger);
             }
         );
     }

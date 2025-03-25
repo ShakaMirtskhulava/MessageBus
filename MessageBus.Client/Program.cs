@@ -21,7 +21,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     });
 });
 var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
-builder.Services.ConfigureEFCoreIntegrationEventLogServices<AppDbContext>(eventTyepsAssemblyName);
+
+PublisherOptions options = new(
+    delayMs: 1000, 
+    eventsBatchSize: 1000, 
+    failedMessageChainBatchSize: 100,
+    eventTyepsAssemblyName: eventTyepsAssemblyName);
+builder.Services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options);
 
 builder.AddRabbitMqEventBus(connectionFactory =>
 {
@@ -31,6 +37,7 @@ builder.AddRabbitMqEventBus(connectionFactory =>
     connectionFactory.Password = "password";
 })
 .AddSubscription<OrderCreated, OrderCreatedEventHandler>()
+.AddSubscription<OrderUpdated, OrderUpdatedEventHandler>()
 .AddSubscription<ToastCreated, ToastCreatedEventHandler>();
 
 var app = builder.Build();
@@ -50,8 +57,7 @@ app.MapPost("/order", async (OrderRequest order,CancellationToken cancellationTo
 
     Order newOrder = new() { Data = order.Data };
     OrderCreated? orderCreated = new(newOrder.Id, order.Data);
-    //var @event = await integrationEventService.SaveAndPublish<Order,Guid>(newOrder, orderCreated, cancellationToken);
-    var @event = await integrationEventService.Add<Order, Guid>(newOrder, orderCreated, cancellationToken);
+    var @event = await integrationEventService.Add<Order,Guid>(newOrder, orderCreated, cancellationToken);
 
     return Results.Created($"/order/{newOrder.Id}", newOrder);
 })
@@ -80,7 +86,7 @@ app.MapPost("/toast", async (ToastRequest toast, CancellationToken cancellationT
 
     Toast newToast = new() { Data = toast.Data };
     ToastCreated toastCreated = new(newToast.Id, newToast.Data);
-    var @event = await integrationEventService.SaveAndPublish<Toast, int>(newToast, toastCreated, cancellationToken);
+    var @event = await integrationEventService.Add<Toast, int>(newToast, toastCreated, cancellationToken);
 })
 .WithName("toast")
 .WithOpenApi();
@@ -92,6 +98,23 @@ public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger) 
     public async Task Handle(OrderCreated @event)
     {
         logger.LogInformation("Handling order created event");
+        await Task.Delay(100);
+    }
+}
+
+public class OrderUpdatedEventHandler(ILogger<OrderCreatedEventHandler> logger) : IIntegrationEventHandler<OrderUpdated>
+{
+    public static int counter = 0;
+    public async Task Handle(OrderUpdated @event)
+    {
+        if (counter == 1)
+        {
+            counter++;
+            throw new Exception("This is very cool exception", new("This is also a very cool inner exception"));
+        }
+        counter++;
+
+        logger.LogInformation("Handling order updated event");
         await Task.Delay(100);
     }
 }

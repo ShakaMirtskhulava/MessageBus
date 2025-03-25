@@ -1,34 +1,39 @@
 ﻿using MessageBus.Abstractions;
 using MessageBus.Events;
-using MessageBus.Example.IntegrationEvents;
-using MessageBus.IntegrationEventLog;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Threading;
 
-namespace MessageBus.EventPublisher;
+namespace MessageBus.IntegrationEventLog;
 
 public class Publisher : BackgroundService
 {
-    const int DELAY = 1000;
+    private readonly int _delay;
     private readonly IServiceProvider _serviceProvider;
+    private readonly string _eventTyepsAssemblyName;
+    private readonly int _eventsBatchSize;
+    private readonly int _failedMessageChainBatchSize;
 
-    public Publisher(IServiceProvider serviceProvider)
+    public Publisher(IServiceProvider serviceProvider, PublisherOptions options)
     {
         _serviceProvider = serviceProvider;
+        _eventTyepsAssemblyName = options.eventTyepsAssemblyName;
+        _delay = options.delayMs;
+        _eventsBatchSize = options.eventsBatchSize;
+        _failedMessageChainBatchSize = options.failedMessageChainBatchSize;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
-            var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
             using var scope = _serviceProvider.CreateScope();
             var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
             var integrationEventService = scope.ServiceProvider.GetRequiredService<IIntegrationEventService>();
             var integrationEventLogService = scope.ServiceProvider.GetRequiredService<IIntegrationEventLogService>();
             while (!eventBus.IsReady)
             {
-                Console.WriteLine("Publisher is waiting for connection to RabbitMQ");
+                Console.WriteLine("Publisher is waiting for connection for the broker to connect");
                 await Task.Delay(100);
             }
 
@@ -36,20 +41,22 @@ public class Publisher : BackgroundService
             {
                 try
                 {
-                    var eventsToPublish = (await integrationEventService.GetPendingEvents(1000, eventTyepsAssemblyName, stoppingToken)).ToList();
-                    var failedEventsToRepublish = await integrationEventService.RetriveFailedEventsToRepublish(100, stoppingToken);
-                    if(failedEventsToRepublish.Any())
-                        eventsToPublish.AddRange(failedEventsToRepublish);
+                    List<IntegrationEvent> eventsToPublish = new();
+                    var normalMessages = (await integrationEventService.GetPendingEvents(_eventsBatchSize, _eventTyepsAssemblyName, stoppingToken)).ToList();
+                    eventsToPublish.AddRange(normalMessages);
+                    var failedMessages = (await integrationEventService.RetriveFailedEventsToRepublish(_failedMessageChainBatchSize, stoppingToken)).ToList();
+                    eventsToPublish.AddRange(failedMessages);
 
                     if (eventsToPublish.Any())
-                        Console.WriteLine($"Publisher is going to publish {eventsToPublish.Count()} events, among which {failedEventsToRepublish.Count()} is failed message");
+                        Console.WriteLine($"Publisher is going to publish {eventsToPublish.Count} events among which {failedMessages.Count} is failed message");
 
                     foreach (var @event in eventsToPublish)
                     {
                         try
                         {
+                            await integrationEventLogService.MarkEventAsInProgress(@event.Id, stoppingToken);
                             await eventBus.PublishAsync(@event);
-                            await integrationEventLogService.MarkEventAsPublished(@event.Id,stoppingToken);
+                            await integrationEventLogService.MarkEventAsPublished(@event.Id, stoppingToken);
                         }
                         catch (Exception ex)
                         {
@@ -59,9 +66,10 @@ public class Publisher : BackgroundService
                         }
                     }
 
-                    if (!eventsToPublish.Any()){
-                        Console.WriteLine($"No events to publish, publisher is waiting for: {DELAY}ms");
-                        await Task.Delay(DELAY, stoppingToken);
+                    if (!eventsToPublish.Any())
+                    {
+                        Console.WriteLine($"No events to publish, publisher is waiting for: {_delay}ms");
+                        await Task.Delay(_delay, stoppingToken);
                     }
                 }
                 catch (Exception ex)
@@ -72,8 +80,7 @@ public class Publisher : BackgroundService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Publisher is stopped, due to the reason: ",ex.Message);
+            Console.WriteLine("Publisher is stopped, due to the reason: ", ex.Message);
         }
     }
-
 }
