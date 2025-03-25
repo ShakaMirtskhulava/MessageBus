@@ -4,8 +4,8 @@ public interface IFailedMessageChain<TFailedMessage> where TFailedMessage : IFai
 {
     int Id { get; set; }
     DateTime CreationTime { get; set; }
-    int Version { get; set; }
     string EntityId { get; set; }
+    public bool ShouldRepublish { get; set; }
 
     ICollection<TFailedMessage>? FailedMessages { get; set; }
 }

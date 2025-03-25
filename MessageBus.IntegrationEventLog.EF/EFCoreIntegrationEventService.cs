@@ -1,6 +1,7 @@
 ﻿using MessageBus.Abstractions;
 using MessageBus.Events;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace MessageBus.IntegrationEventLog.EF;
@@ -12,10 +13,11 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
     private readonly IIntegrationEventLogService _integrationEventLogService;
     private readonly IEventBus _eventBus;
     private readonly Type[] _eventTypes;
+    private readonly ILogger<EFCoreIntegrationEventService<TContext>> _logger;
 
-    public EFCoreIntegrationEventService(TContext dbContext, IUnitOfWork unitOfWork, 
+    public EFCoreIntegrationEventService(TContext dbContext, IUnitOfWork unitOfWork,
         IIntegrationEventLogService integrationEventLogService, IEventBus eventBus,
-        string eventTyepsAssemblyName)
+        string eventTyepsAssemblyName, ILogger<EFCoreIntegrationEventService<TContext>> logger)
     {
         _dbContext = dbContext;
         _unitOfWork = unitOfWork;
@@ -23,6 +25,7 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
         _eventBus = eventBus;
         _eventTypes = Assembly.Load(eventTyepsAssemblyName).GetTypes()
             .Where(t => t.IsSubclassOf(typeof(IntegrationEvent))).ToArray();
+        _logger = logger;
     }
 
     public async Task<IEnumerable<IntegrationEvent>> GetPendingEvents(int batchSize, string eventTyepsAssemblyName, CancellationToken cancellationToken)
@@ -40,16 +43,50 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
         return pendingEventLogs.Select(e => e.IntegrationEvent).ToList();
     }
 
+    public async Task<IEnumerable<IntegrationEvent>> RetriveFailedEventsToRepublish(int batchSize, CancellationToken cancellationToken)
+    {
+        var chians = await _dbContext.Set<FailedMessageChainEF>()
+                                   .Include(fmch => fmch.FailedMessages)
+                                   .Where(e => e.ShouldRepublish)
+                                   .OrderBy(e => e.CreationTime)
+                                   .Take(batchSize)
+                                   .ToListAsync(cancellationToken);
+
+        List<IntegrationEvent> failedEvents = new();
+        foreach (var chain in chians)
+        {
+            if(chain.FailedMessages is null || !chain.FailedMessages.Any())
+                continue;
+
+            foreach (var failedMessage in chain.FailedMessages)
+            {
+                if (failedMessage.ShouldSkip)
+                {
+                    _logger.LogInformation($"Skipping failed message with body: \n{failedMessage.Body}");
+                    continue;
+                }
+                var eventType = _eventTypes.Single(t => t.Name == failedMessage.EventTypeShortName);
+                failedMessage.DeserializeJsonBody(eventType);
+                failedEvents.Add(failedMessage.IntegrationEvent!);
+            }
+        }
+
+        _dbContext.Set<FailedMessageChainEF>().RemoveRange(chians);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return failedEvents;
+    }
+
     public async Task<IntegrationEvent> SaveAndPublish<TEntity, TEntityKey>(TEntity entity, IntegrationEvent evt,CancellationToken cancellationToken) 
         where TEntity : class,IEntity<TEntityKey>
         where TEntityKey : struct, IEquatable<TEntityKey>
     {
-        var @event = await Save<TEntity,TEntityKey>(entity,evt, cancellationToken);
+        var @event = await Add<TEntity,TEntityKey>(entity,evt, cancellationToken);
         await Publish(@event, cancellationToken);
         return @event;
     }
 
-    public async Task<IntegrationEvent> Save<TEntity, TEntityKey>(TEntity entity,IntegrationEvent evt, CancellationToken cancellationToken)
+    public async Task<IntegrationEvent> Add<TEntity, TEntityKey>(TEntity entity,IntegrationEvent evt, CancellationToken cancellationToken)
         where TEntity : class, IEntity<TEntityKey>
         where TEntityKey : struct, IEquatable<TEntityKey>
     {
@@ -59,6 +96,56 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
             try
             {
                 var insertedEntity = await _dbContext.Set<TEntity>().AddAsync(entity, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                evt.EntityId = insertedEntity.Entity.Id;
+                await _integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(evt, cancellationToken);
+                await transaction.CommitAsync();
+                return evt;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
+    }
+
+    public async Task<IntegrationEvent> Update<TEntity, TEntityKey>(TEntity entity, IntegrationEvent evt, CancellationToken cancellationToken)
+        where TEntity : class, IEntity<TEntityKey>
+        where TEntityKey : struct, IEquatable<TEntityKey>
+    {
+        return await _unitOfWork.ExecuteOnDefaultStarategy(async () =>
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                var insertedEntity = _dbContext.Set<TEntity>().Update(entity);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                evt.EntityId = insertedEntity.Entity.Id;
+                await _integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(evt, cancellationToken);
+                await transaction.CommitAsync();
+                return evt;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
+    }
+
+    public async Task<IntegrationEvent> Remove<TEntity, TEntityKey>(TEntity entity, IntegrationEvent evt, CancellationToken cancellationToken)
+        where TEntity : class, IEntity<TEntityKey>
+        where TEntityKey : struct, IEquatable<TEntityKey>
+    {
+        return await _unitOfWork.ExecuteOnDefaultStarategy(async () =>
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                var insertedEntity = _dbContext.Set<TEntity>().Remove(entity);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 evt.EntityId = insertedEntity.Entity.Id;
                 await _integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(evt, cancellationToken);

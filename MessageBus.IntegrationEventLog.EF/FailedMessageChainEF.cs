@@ -10,10 +10,9 @@ public class FailedMessageChainEF : IFailedMessageChain<FailedMessageEF>
     [Required]
     public DateTime CreationTime { get; set; } = DateTime.UtcNow;
     [Required]
-    public int Version { get; set; }
+    public bool ShouldRepublish { get; set; } = false;
     [Required]
     public required string EntityId { get; set; }
-
     [NotMapped]
     public ICollection<FailedMessageEF>? FailedMessages { get; set; }
 }

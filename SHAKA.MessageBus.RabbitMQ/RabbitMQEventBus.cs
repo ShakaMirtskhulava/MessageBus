@@ -174,6 +174,7 @@ public sealed class RabbitMQEventBus(
 
         var integrationEvent = DeserializeMessage(message, eventType);
         string? entityId = integrationEvent.EntityId?.ToString();
+        var eventTypeShortname = eventType.Name;
 
         logger.LogInformation("Processing event {EventName} with Id {EventId}", eventName, integrationEvent.Id);
 
@@ -184,7 +185,7 @@ public sealed class RabbitMQEventBus(
                 var failedMessageChainExists = await integrationEventLogService.FailedMessageChainExists(entityId, CancellationToken.None);
                 if (failedMessageChainExists)
                 {
-                    await integrationEventLogService.AddInFailedMessageChain(entityId, message, null, CancellationToken.None);
+                    await integrationEventLogService.AddInFailedMessageChain(entityId, eventTypeShortname, message, null, CancellationToken.None);
                     logger.LogWarning("Failed message chain exists for entity {EntityId}, adding message to failed chain: {Message}", entityId, message);
                     continue;
                 }
@@ -195,7 +196,7 @@ public sealed class RabbitMQEventBus(
             }
             catch(Exception ex)
             {
-                await integrationEventLogService.AddInFailedMessageChain(entityId, message, ex, CancellationToken.None);
+                await integrationEventLogService.AddInFailedMessageChain(entityId, eventTypeShortname, message, ex, CancellationToken.None);
                 logger.LogError("Error handling event {Event} with Id {EventId}, Exception: {Exception}", integrationEvent, integrationEvent.Id, ex);
             }
         }

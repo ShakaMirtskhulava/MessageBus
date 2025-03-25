@@ -2,6 +2,7 @@
 using MessageBus.IntegrationEventLog.EF.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace MessageBus.IntegrationEventLog.EF;
 
@@ -51,8 +52,9 @@ public static class EfCoreIntegrationLogExtensions
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                 var integrationEventLogService = scope.ServiceProvider.GetRequiredService<IIntegrationEventLogService>();
                 var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<EFCoreIntegrationEventService<TContext>>>();
 
-                return new EFCoreIntegrationEventService<TContext>(dbContext, unitOfWork, integrationEventLogService, eventBus, eventTyepsAssemblyName);
+                return new EFCoreIntegrationEventService<TContext>(dbContext, unitOfWork, integrationEventLogService, eventBus, eventTyepsAssemblyName, logger);
             }
         );
     }

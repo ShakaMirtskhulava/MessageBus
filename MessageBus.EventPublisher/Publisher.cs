@@ -1,4 +1,5 @@
 ﻿using MessageBus.Abstractions;
+using MessageBus.Events;
 using MessageBus.Example.IntegrationEvents;
 using MessageBus.IntegrationEventLog;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,9 +36,14 @@ public class Publisher : BackgroundService
             {
                 try
                 {
-                    var eventsToPublish = await integrationEventService.GetPendingEvents(1000, eventTyepsAssemblyName, stoppingToken);
-                    if(eventsToPublish.Any())
-                        Console.WriteLine($"Publisher is going to publish {eventsToPublish.Count()} events");
+                    var eventsToPublish = (await integrationEventService.GetPendingEvents(1000, eventTyepsAssemblyName, stoppingToken)).ToList();
+                    var failedEventsToRepublish = await integrationEventService.RetriveFailedEventsToRepublish(100, stoppingToken);
+                    if(failedEventsToRepublish.Any())
+                        eventsToPublish.AddRange(failedEventsToRepublish);
+
+                    if (eventsToPublish.Any())
+                        Console.WriteLine($"Publisher is going to publish {eventsToPublish.Count()} events, among which {failedEventsToRepublish.Count()} is failed message");
+
                     foreach (var @event in eventsToPublish)
                     {
                         try

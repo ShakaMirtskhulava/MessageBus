@@ -11,5 +11,5 @@ public interface IIntegrationEventLogService
     Task MarkEventAsInProgress(Guid eventId, CancellationToken cancellationToken);
     Task MarkEventAsFailed(Guid eventId, CancellationToken cancellationToken);
     Task<bool> FailedMessageChainExists(string? entityId, CancellationToken cancellationToken);
-    Task AddInFailedMessageChain(string? entityId, string body, Exception? exception, CancellationToken cancellationToken);
+    Task AddInFailedMessageChain(string? entityId, string eventShortName, string body, Exception? exception, CancellationToken cancellationToken);
 }

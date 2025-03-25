@@ -51,10 +51,27 @@ app.MapPost("/order", async (OrderRequest order,CancellationToken cancellationTo
     Order newOrder = new() { Data = order.Data };
     OrderCreated? orderCreated = new(newOrder.Id, order.Data);
     //var @event = await integrationEventService.SaveAndPublish<Order,Guid>(newOrder, orderCreated, cancellationToken);
-    var @event = await integrationEventService.Save<Order, Guid>(newOrder, orderCreated, cancellationToken);
+    var @event = await integrationEventService.Add<Order, Guid>(newOrder, orderCreated, cancellationToken);
+
+    return Results.Created($"/order/{newOrder.Id}", newOrder);
 })
 .WithName("order")
 .WithOpenApi();
+
+app.MapPut("/order/{id}", async (Guid id, OrderRequest order, CancellationToken cancellationToken) =>
+{
+    using var scope = app.Services.CreateScope();
+    var integrationEventService = scope.ServiceProvider.GetRequiredService<IIntegrationEventService>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var targetOrder = await dbContext.Orders.FindAsync(id);
+    if(targetOrder is null)
+        return Results.NotFound();
+    
+    targetOrder.Data = order.Data;
+    OrderUpdated orderUpdated = new(targetOrder.Id, order.Data);
+    var @event = await integrationEventService.Update<Order, Guid>(targetOrder, orderUpdated, cancellationToken);
+    return Results.Ok(targetOrder);
+});
 
 app.MapPost("/toast", async (ToastRequest toast, CancellationToken cancellationToken) =>
 {
@@ -64,7 +81,6 @@ app.MapPost("/toast", async (ToastRequest toast, CancellationToken cancellationT
     Toast newToast = new() { Data = toast.Data };
     ToastCreated toastCreated = new(newToast.Id, newToast.Data);
     var @event = await integrationEventService.SaveAndPublish<Toast, int>(newToast, toastCreated, cancellationToken);
-    //var @event = await integrationEventService.Save(toastCreated, cancellationToken);
 })
 .WithName("toast")
 .WithOpenApi();

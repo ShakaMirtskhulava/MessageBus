@@ -1,6 +1,5 @@
 ﻿using MessageBus.Events;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Primitives;
 using System.Text;
 
 namespace MessageBus.IntegrationEventLog.EF.Services;
@@ -21,6 +20,7 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
         var result = await _context.Set<EFCoreIntegrationEventLog>()
                                    .Where(e => e.State == EventStateEnum.NotPublished)
                                    .OrderBy(e => e.CreationTime)
+                                   .Take(batchSize)
                                    .ToListAsync(cancellationToken);
 
         return result;
@@ -61,7 +61,7 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
                              .ConfigureAwait(false);
     }
 
-    public async Task AddInFailedMessageChain(string? entityId, string body, Exception? exception, CancellationToken cancellationToken)
+    public async Task AddInFailedMessageChain(string? entityId,string eventShortName, string body, Exception? exception, CancellationToken cancellationToken)
     {
         FailedMessageChainEF? targetFiledMessageChain = null;
         targetFiledMessageChain = await _context.Set<FailedMessageChainEF>()
@@ -73,14 +73,14 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
             targetFiledMessageChain = new()
             {
                 EntityId = entityId ?? "NoEntity",
-                Version = 1,
                 FailedMessages = new List<FailedMessageEF>()
                 {
                     new()
                     {
                         Body = body,
                         Message = exception is not null ? GetFullExceptionMessage(exception) : null,
-                        StackTrace = exception is not null ? exception.StackTrace : null
+                        StackTrace = exception is not null ? exception.StackTrace : null,
+                        EventTypeShortName = eventShortName
                     }
                 }
             };
@@ -92,7 +92,8 @@ public class EFIntegrationEventLogService<TContext> : IIntegrationEventLogServic
             {
                 Body = body,
                 Message = exception is not null ? GetFullExceptionMessage(exception) : null,
-                StackTrace = exception is not null ? exception.StackTrace : null
+                StackTrace = exception is not null ? exception.StackTrace : null,
+                EventTypeShortName = eventShortName
             });
 
             _context.Set<FailedMessageChainEF>().Update(targetFiledMessageChain);
