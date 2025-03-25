@@ -1,5 +1,4 @@
 ﻿using MessageBus.Events;
-using MessageBus.IntegrationEventLog.Abstractions;
 using MessageBus.IntegrationEventLog.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

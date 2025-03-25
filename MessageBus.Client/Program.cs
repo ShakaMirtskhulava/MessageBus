@@ -34,7 +34,7 @@ builder.AddRabbitMqEventBus(connectionFactory =>
 .AddSubscription<ToastCreated, ToastCreatedEventHandler>();
 
 builder.Services.ConfigureEventLogServices<AppDbContext>(eventTyepsAssemblyName);
-//builder.Services.ConfigureEFCoreEventLogServicesWithPublisher<AppDbContext>(options =>
+//builder.Services.ConfigurePublisher<AppDbContext>(options =>
 //    {
 //        options.DelayMs = 1000;
 //        options.EventsBatchSize = 1000;

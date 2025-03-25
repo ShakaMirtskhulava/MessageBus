@@ -1,4 +1,5 @@
 ﻿using MessageBus.Events;
+using MessageBus.IntegrationEventLog.Models;
 
 namespace MessageBus.IntegrationEventLog.Abstractions;
 

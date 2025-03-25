@@ -86,20 +86,20 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
     {
         return await _unitOfWork.ExecuteOnDefaultStarategy(async () =>
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            await _unitOfWork.BeginTransaction(cancellationToken);
             try
             {
                 var insertedEntity = await _dbContext.Set<TEntity>().AddAsync(entity, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 evt.EntityId = insertedEntity.Entity.Id;
                 await _integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(evt, cancellationToken);
-                await transaction.CommitAsync();
+                await _unitOfWork.CommitTransaction(cancellationToken);
                 return evt;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                await transaction.RollbackAsync();
+                await _unitOfWork.RollbackTransaction(cancellationToken);
                 throw;
             }
         });
@@ -111,20 +111,20 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
     {
         return await _unitOfWork.ExecuteOnDefaultStarategy(async () =>
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            await _unitOfWork.BeginTransaction(cancellationToken);
             try
             {
                 var insertedEntity = _dbContext.Set<TEntity>().Update(entity);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 evt.EntityId = insertedEntity.Entity.Id;
                 await _integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(evt, cancellationToken);
-                await transaction.CommitAsync();
+                await _unitOfWork.CommitTransaction(cancellationToken);
                 return evt;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                await transaction.RollbackAsync();
+                await _unitOfWork.RollbackTransaction(cancellationToken);
                 throw;
             }
         });
@@ -136,20 +136,20 @@ public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService 
     {
         return await _unitOfWork.ExecuteOnDefaultStarategy(async () =>
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            await _unitOfWork.BeginTransaction(cancellationToken);
             try
             {
                 var insertedEntity = _dbContext.Set<TEntity>().Remove(entity);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 evt.EntityId = insertedEntity.Entity.Id;
                 await _integrationEventLogService.SaveEvent<EFCoreIntegrationEventLog>(evt, cancellationToken);
-                await transaction.CommitAsync();
+                await _unitOfWork.CommitTransaction(cancellationToken);
                 return evt;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                await transaction.RollbackAsync();
+                await _unitOfWork.RollbackTransaction(cancellationToken);
                 throw;
             }
         });

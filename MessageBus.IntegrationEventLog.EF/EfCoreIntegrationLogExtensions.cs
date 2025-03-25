@@ -67,15 +67,11 @@ public static class EfCoreIntegrationLogExtensions
     public static void ConfigureEFCoreEventLogServicesWithPublisher<TContext>(this IServiceCollection services, Action<PublisherOptions> optionsAction) 
         where TContext : DbContext
     {
-        ArgumentNullException.ThrowIfNull(optionsAction);
-
-        PublisherOptions options = new();
-        optionsAction(options);
 
         services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
         services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
+        services.ConfigurePublisher(optionsAction);
 
-        services.AddHostedService<Publisher.Publisher>(provder => new(provder, options));
         services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>(
             provider =>
             { 
