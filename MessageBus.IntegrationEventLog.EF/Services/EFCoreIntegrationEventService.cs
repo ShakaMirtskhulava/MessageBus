@@ -12,13 +12,13 @@ namespace MessageBus.IntegrationEventLog.EF.Services;
 public class EFCoreIntegrationEventService<TContext> : IIntegrationEventService where TContext : DbContext
 {
     private readonly DbContext _dbContext;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly UnitOfWork<TContext> _unitOfWork;
     private readonly IIntegrationEventLogService _integrationEventLogService;
     private readonly IEventBus _eventBus;
     private readonly Type[] _eventTypes;
     private readonly ILogger<EFCoreIntegrationEventService<TContext>> _logger;
 
-    public EFCoreIntegrationEventService(TContext dbContext, IUnitOfWork unitOfWork,
+    public EFCoreIntegrationEventService(TContext dbContext, UnitOfWork<TContext> unitOfWork,
         IIntegrationEventLogService integrationEventLogService, IEventBus eventBus,
         string eventTyepsAssemblyName, ILogger<EFCoreIntegrationEventService<TContext>> logger)
     {

@@ -3,13 +3,13 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace MessageBus.IntegrationEventLog.EF;
 
-public class UnitOfWorkEFCore<TContext> : IUnitOfWork where TContext : DbContext
+public class UnitOfWork<TContext> where TContext : DbContext
 {
     private readonly DbContext _dbContext;
     private IDbContextTransaction? _transaction;
     private IExecutionStrategy? _executionStrategy;
 
-    public UnitOfWorkEFCore(TContext dbContext)
+    public UnitOfWork(TContext dbContext)
     {
         _dbContext = dbContext;
     }

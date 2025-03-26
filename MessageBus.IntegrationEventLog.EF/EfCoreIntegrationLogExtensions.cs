@@ -47,14 +47,14 @@ public static class EfCoreIntegrationLogExtensions
         where TContext : DbContext
     {
         services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
-        services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
+        services.AddScoped<UnitOfWork<TContext>, UnitOfWork<TContext>>();
 
         services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>(
             provider =>
             {
                 var scope = provider.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<TContext>();
-                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                var unitOfWork = scope.ServiceProvider.GetRequiredService<UnitOfWork<TContext>>();
                 var integrationEventLogService = scope.ServiceProvider.GetRequiredService<IIntegrationEventLogService>();
                 var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<EFCoreIntegrationEventService<TContext>>>();
@@ -68,7 +68,7 @@ public static class EfCoreIntegrationLogExtensions
         where TContext : DbContext
     {
         services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
-        services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
+        services.AddScoped<UnitOfWork<TContext>, UnitOfWork<TContext>>();
         var options = services.ConfigurePublisher(optionsAction);
 
         services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>(
@@ -76,7 +76,7 @@ public static class EfCoreIntegrationLogExtensions
             { 
                 var scope = provider.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<TContext>();
-                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                var unitOfWork = scope.ServiceProvider.GetRequiredService<UnitOfWork<TContext>>();
                 var integrationEventLogService = scope.ServiceProvider.GetRequiredService<IIntegrationEventLogService>();
                 var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<EFCoreIntegrationEventService<TContext>>>();
