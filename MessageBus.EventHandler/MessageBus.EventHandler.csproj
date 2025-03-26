@@ -7,10 +7,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="SHAKA.MessageBus.IntegrationEventLog.EF" Version="1.0.0" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="..\IntegrationEvents\MessageBus.Example.IntegrationEvents.csproj" />
-    <ProjectReference Include="..\MessageBus.IntegrationEventLog.EF\MessageBus.IntegrationEventLog.EF.csproj" />
     <ProjectReference Include="..\SHAKA.MessageBus.RabbitMQ\MessageBus.RabbitMQ.csproj" />
   </ItemGroup>
 

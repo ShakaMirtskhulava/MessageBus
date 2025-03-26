@@ -29,7 +29,7 @@ public static class ServicesConfigurationExtensions
         });
         var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
 
-        services.ConfigureEFCoreEventLogServicesWithPublisher<AppDbContext>(options =>
+        services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options =>
         {
             options.DelayMs = 1000;
             options.EventsBatchSize = 1000;

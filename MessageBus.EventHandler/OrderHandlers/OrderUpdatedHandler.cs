@@ -10,7 +10,10 @@ public class OrderUpdatedHandler : IIntegrationEventHandler<OrderUpdated>
     public Task Handle(OrderUpdated @event)
     {
         if (count == 2)
+        {
+            count++;
             throw new Exception("This exception is thrown for testing purposes", new Exception("This inner exception is thrown for the testing urposes"));
+        }
         count++;
 
         Console.WriteLine("Handling the order updated");

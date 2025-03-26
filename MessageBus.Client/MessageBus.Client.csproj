@@ -12,12 +12,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="SHAKA.MessageBus.IntegrationEventLog.EF" Version="1.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\IntegrationEvents\MessageBus.Example.IntegrationEvents.csproj" />
-    <ProjectReference Include="..\MessageBus.IntegrationEventLog.EF\MessageBus.IntegrationEventLog.EF.csproj" />
     <ProjectReference Include="..\SHAKA.MessageBus.RabbitMQ\MessageBus.RabbitMQ.csproj" />
   </ItemGroup>
 
