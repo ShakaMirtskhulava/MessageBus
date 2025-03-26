@@ -1,6 +1,6 @@
 ﻿using MessageBus.Abstractions;
 using MessageBus.Events;
-using MessageBus.IntegrationEventLog.Abstractions;
+using MessageBus.IntegrationEventLog.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

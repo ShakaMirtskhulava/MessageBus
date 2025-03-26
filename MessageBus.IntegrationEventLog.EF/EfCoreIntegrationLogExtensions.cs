@@ -1,8 +1,8 @@
 ﻿using MessageBus.Abstractions;
-using MessageBus.IntegrationEventLog.Abstractions;
 using MessageBus.IntegrationEventLog.EF.Models;
 using MessageBus.IntegrationEventLog.EF.Services;
 using MessageBus.IntegrationEventLog.Publisher;
+using MessageBus.IntegrationEventLog.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -67,10 +67,9 @@ public static class EfCoreIntegrationLogExtensions
     public static void ConfigureEFCoreEventLogServicesWithPublisher<TContext>(this IServiceCollection services, Action<PublisherOptions> optionsAction) 
         where TContext : DbContext
     {
-
         services.AddScoped<IIntegrationEventLogService, EFIntegrationEventLogService<TContext>>();
         services.AddScoped<IUnitOfWork, UnitOfWorkEFCore<TContext>>();
-        services.ConfigurePublisher(optionsAction);
+        var options = services.ConfigurePublisher(optionsAction);
 
         services.AddScoped<IIntegrationEventService, EFCoreIntegrationEventService<TContext>>(
             provider =>

@@ -1,7 +1,7 @@
 ﻿using MessageBus.Events;
-using MessageBus.IntegrationEventLog.Abstractions;
 using MessageBus.IntegrationEventLog.EF.Models;
 using MessageBus.IntegrationEventLog.Models;
+using MessageBus.IntegrationEventLog.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 

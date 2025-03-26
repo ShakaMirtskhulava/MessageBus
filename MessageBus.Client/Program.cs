@@ -3,8 +3,8 @@ using MessageBus.Client;
 using MessageBus.Client.Models;
 using MessageBus.Example.IntegrationEvents;
 using MessageBus.Extensions;
-using MessageBus.IntegrationEventLog.Abstractions;
 using MessageBus.IntegrationEventLog.EF;
+using MessageBus.IntegrationEventLog.Services;
 using MessageBus.RabbitMQ;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,7 +34,7 @@ builder.AddRabbitMqEventBus(connectionFactory =>
 .AddSubscription<ToastCreated, ToastCreatedEventHandler>();
 
 builder.Services.ConfigureEventLogServices<AppDbContext>(eventTyepsAssemblyName);
-//builder.Services.ConfigurePublisher<AppDbContext>(options =>
+//builder.Services.ConfigureEFCoreEventLogServicesWithPublisher<AppDbContext>(options =>
 //    {
 //        options.DelayMs = 1000;
 //        options.EventsBatchSize = 1000;
