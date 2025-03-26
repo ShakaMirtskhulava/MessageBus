@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SHAKA.MessageBus\MessageBus.csproj" />
+    <PackageReference Include="SHAKA.MessageBus" Version="1.0.9" />
   </ItemGroup>
 
 

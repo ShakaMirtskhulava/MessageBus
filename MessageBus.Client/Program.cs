@@ -33,15 +33,15 @@ builder.AddRabbitMqEventBus(connectionFactory =>
 .AddSubscription<OrderUpdated, OrderUpdatedEventHandler>()
 .AddSubscription<ToastCreated, ToastCreatedEventHandler>();
 
-//builder.Services.ConfigureEventLogServices<AppDbContext>(eventTyepsAssemblyName);
-builder.Services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options =>
-    {
-        options.DelayMs = 1000;
-        options.EventsBatchSize = 1000;
-        options.FailedMessageChainBatchSize = 100;
-        options.EventTyepsAssemblyName = eventTyepsAssemblyName;
-    }
-);
+builder.Services.ConfigureEventLogServices<AppDbContext>(eventTyepsAssemblyName);
+//builder.Services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options =>
+//    {
+//        options.DelayMs = 1000;
+//        options.EventsBatchSize = 1000;
+//        options.FailedMessageChainBatchSize = 100;
+//        options.EventTyepsAssemblyName = eventTyepsAssemblyName;
+//    }
+//);
 
 var app = builder.Build();
 

@@ -12,7 +12,6 @@
 	<PackageReference Include="SHAKA.MessageBus.RabbitMQ" Version="1.0.6" />
   </ItemGroup>
 
-
   <ItemGroup>
     <ProjectReference Include="..\IntegrationEvents\MessageBus.Example.IntegrationEvents.csproj" />
   </ItemGroup>

@@ -18,11 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IntegrationEvents\MessageBus.Example.IntegrationEvents.csproj" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Migrations\" />
+    <ProjectReference Include="..\IntegrationEvents\MessageBus.Example.IntegrationEvents.csproj" />
   </ItemGroup>
 
 </Project>

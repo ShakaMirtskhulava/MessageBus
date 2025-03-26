@@ -1,6 +1,5 @@
 ﻿using MessageBus.Example.IntegrationEvents;
 using MessageBus.IntegrationEventLog.EF;
-using MessageBus.IntegrationEventLog.Publisher;
 using MessageBus.RabbitMQ;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
