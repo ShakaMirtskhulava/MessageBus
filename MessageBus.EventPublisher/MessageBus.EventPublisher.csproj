@@ -11,11 +11,11 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
     <PackageReference Include="SHAKA.MessageBus.IntegrationEventLog.EF" Version="1.0.0" />
+	<PackageReference Include="SHAKA.MessageBus.RabbitMQ" Version="1.0.6" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\IntegrationEvents\MessageBus.Example.IntegrationEvents.csproj" />
-    <ProjectReference Include="..\SHAKA.MessageBus.RabbitMQ\MessageBus.RabbitMQ.csproj" />
   </ItemGroup>
 
   <ItemGroup>
