@@ -1,38 +1,54 @@
 # MessageBus for Microservices
 
-This repository contians an example of how the messaging can be implemented using the **SHAKA.MessageBus*** libraries in .NET. This are the libraries:
-1) https://github.com/ShakaMirtskhulava/SHAKA.MessageBus
-2) https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.IntegrationEventLog
-3) https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.IntegrationEventLog.EF
-4) https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.RabbitMQ
+This repository contains an example of how messaging can be implemented using the **SHAKA.MessageBus** libraries in .NET.
 
-As you well avare **SHAKA.MessageBus** libraries support 2 types of microservice design:
-I)Type 1 would be type of an app that implements Event Publishin and Handling logic as well as the business logic in a single .NET exe project.
-II)Type 2 would be type of an app that implements Event Publishin, Event Handling and Business Logic implementations all in a different .NET applications.
+## SHAKA.MessageBus Libraries
+The following libraries are used:
 
-Let's see how we can utilize SHAKA.MessageBus* libraries to implement the message handling the application of type 1.
-First of all we'll need to install the following package:
-1)SHAKA.MessageBus.IntegrationEventLog.EF
-2)SHAKA.MessageBus.RabbitMQ
-As you can see we implement pacakges of speficic implementations of the abstractions for the ORM EF Core and Message Borker RabbitMQ
-In the example we'll also have the following packages for general development:
-3)Microsoft.AspNetCore.OpenApi
-4)Microsoft.EntityFrameworkCore.Tools
-5)Swashbuckle.AspNetCore
+1. [SHAKA.MessageBus](https://github.com/ShakaMirtskhulava/SHAKA.MessageBus)
+2. [SHAKA.MessageBus.IntegrationEventLog](https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.IntegrationEventLog)
+3. [SHAKA.MessageBus.IntegrationEventLog.EF](https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.IntegrationEventLog.EF)
+4. [SHAKA.MessageBus.RabbitMQ](https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.RabbitMQ)
 
-Since we're using EF core specific package, it means that we'll be using the EF Core for the data access, so we'll have to configure a DbContext in DI Container:
+## Microservice Design Approaches
+SHAKA.MessageBus supports two types of microservice designs:
+
+1. **Type 1** - An application that implements Event Publishing, Event Handling, and Business Logic in a single .NET executable project.
+2. **Type 2** - An application where Event Publishing, Event Handling, and Business Logic are implemented in separate .NET applications.
+
+## Implementing Message Handling in a Type 1 Application
+### Required Packages
+To implement messaging, install the following NuGet packages:
+
+1. `SHAKA.MessageBus.IntegrationEventLog.EF`
+2. `SHAKA.MessageBus.RabbitMQ`
+
+These packages provide specific implementations for:
+- **ORM**: `SHAKA.MessageBus.IntegrationEventLog.EF` for Entity Framework Core.
+- **Message Broker**: `SHAKA.MessageBus.RabbitMQ` for RabbitMQ.
+
+Additional dependencies for general development:
+
+3. `Microsoft.AspNetCore.OpenApi`
+4. `Microsoft.EntityFrameworkCore.Tools`
+5. `Swashbuckle.AspNetCore`
+
+### Configuring EF Core DbContext
+Since we're using an EF Core-specific package, configure a `DbContext` in the Dependency Injection (DI) container:
 
 ```csharp
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),opt =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), opt =>
     {
         opt.EnableRetryOnFailure();
     });
 });
 ```
-Now we need to confiugre our message in the DI container, for that we can use the AddRabbitMqEventBus extensions method specifying the details of the RabbitMQ server.
-Here we can also register the events and their respective event handlers.
+
+### Configuring Message Bus
+Register the RabbitMQ event bus in the DI container using `AddRabbitMqEventBus`. Here, we also register events and their respective handlers:
+
 ```csharp
 builder.AddRabbitMqEventBus(connectionFactory =>
 {
@@ -45,27 +61,30 @@ builder.AddRabbitMqEventBus(connectionFactory =>
 .AddSubscription<OrderUpdated, OrderUpdatedEventHandler>()
 .AddSubscription<ToastCreated, ToastCreatedEventHandler>();
 ```
-Now we need to configure IntegrationEventLog.EF service so that we'll be able to utilize outbox pattern as well as failed message handling logic.
-Since our app implements both publishing and handling, we can use an extension method ConfigureEventLogServicesWithPublisher specifing the DBContext that'll be used to 
-write an entity updates as well as the event logs in the database.
-This extension method also take the options for the publisher, which needs to know about the name of the assembly where all the IntegrationEvents reside.
+
+### Configuring Integration Event Log for Outbox Pattern
+To enable the **outbox pattern** and failed message handling logic, configure `IntegrationEventLog.EF`. Since our app handles both event publishing and handling, use `ConfigureEventLogServicesWithPublisher`, specifying the `DbContext` used for storing entity updates and event logs.
+
 ```csharp
-var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
+var eventTypesAssemblyName = typeof(OrderCreated).Assembly.FullName!;
 builder.Services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options =>
-    {
-        options.DelayMs = 1000;
-        options.EventsBatchSize = 1000;
-        options.FailedMessageChainBatchSize = 100;
-        options.EventTyepsAssemblyName = eventTyepsAssemblyName;
-    }
-);
+{
+    options.DelayMs = 1000;
+    options.EventsBatchSize = 1000;
+    options.FailedMessageChainBatchSize = 100;
+    options.EventTypesAssemblyName = eventTypesAssemblyName;
+});
 ```
-It is necessary for the event classes to implement the IntegrationEvent class as well as the entity classes need to implement the IEntity interface
+
+### Defining Event and Entity Classes
+Event classes must implement `IntegrationEvent`, while entity classes must implement `IEntity<T>`:
+
 ```csharp
 public class Order : IEntity<Guid>
 {
     [Key]
     public Guid Id { get; set; } = new();
+    
     [Required]
     public required string Data { get; set; }
 }
@@ -73,11 +92,56 @@ public class Order : IEntity<Guid>
 public record OrderCreated : IntegrationEvent
 {
     public string Data { get; set; }
-
+    
     public OrderCreated(Guid orderId, string data) : base(orderId)
     {
         Data = data;
     }
 }
 ```
+
+### Implementing Event Handlers
+Event handlers must implement `IIntegrationEventHandler<T>`:
+
+```csharp
+public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger) : IIntegrationEventHandler<OrderCreated>
+{
+    public async Task Handle(OrderCreated @event)
+    {
+        logger.LogInformation("Handling order created event");
+        await Task.Delay(100);
+    }
+}
+```
+
+### Running Database Migrations
+Since EF Core is used, the necessary tables (`IntegrationEventLogs`, `FailedMessages`, and `FailedMessageChains`) must be created. Generate a migration after configuring the DI container to create the required schema.
+
+### Creating an Order and Publishing an Event
+The following API endpoint creates an order and publishes an event:
+
+```csharp
+app.MapPost("/order", async (OrderRequest order, CancellationToken cancellationToken) =>
+{
+    using var scope = app.Services.CreateScope();
+    var integrationEventService = scope.ServiceProvider.GetRequiredService<IIntegrationEventService>();
+
+    Order newOrder = new() { Data = order.Data };
+    OrderCreated orderCreated = new(newOrder.Id, order.Data);
+    var @event = await integrationEventService.Add<Order, Guid>(newOrder, orderCreated, cancellationToken);
+
+    return Results.Created($"/order/{newOrder.Id}", newOrder);
+})
+.WithName("order")
+.WithOpenApi();
+```
+
+---
+This guide provides a structured approach to implementing messaging using **SHAKA.MessageBus** libraries in a Type 1 microservice architecture. 🚀
+
+## Implementing Message Handling in a Type 1 Application
+So in this case we'll have 3 project, 1 will be a presentation layer and the other 2 is are the worker projects EventPublisher and event handler.
+Packages for API:
+
+
 
