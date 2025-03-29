@@ -20,7 +20,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         opt.EnableRetryOnFailure();
     });
 });
-var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
 
 builder.AddRabbitMqEventBus(connectionFactory =>
 {
@@ -33,7 +32,9 @@ builder.AddRabbitMqEventBus(connectionFactory =>
 .AddSubscription<OrderUpdated, OrderUpdatedEventHandler>()
 .AddSubscription<ToastCreated, ToastCreatedEventHandler>();
 
+var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
 builder.Services.ConfigureEventLogServices<AppDbContext>(eventTyepsAssemblyName);
+
 //builder.Services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options =>
 //    {
 //        options.DelayMs = 1000;
