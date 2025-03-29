@@ -94,14 +94,26 @@ public class Order : IEntity<Guid>
 
 public record OrderCreated : IntegrationEvent
 {
-    public string Data { get; set; }
+    public string Data { get; init; }
 
     public OrderCreated(Guid orderId, string data) : base(orderId)
     {
         Data = data;
     }
+
+    [JsonConstructor]
+    public OrderCreated(Guid id, string data, DateTime creationDate, string? correlationId, object entityId) : base(entityId)
+    {
+        Id = id;
+        Data = data;
+        CreationDate = creationDate;
+        CorrelationId = correlationId;
+        EntityId = entityId;
+    }
 }
 ```
+
+Do not forget to give the event a JsonConstructor, which'll be used by the Json Serializer to deserialize the Contnet.
 
 ### Implementing Event Handlers
 
