@@ -26,9 +26,6 @@ To utilize **SHAKA.MessageBus** libraries for message handling, we need to insta
 ### Required Packages
 1. `SHAKA.MessageBus.IntegrationEventLog.EF`
 2. `SHAKA.MessageBus.RabbitMQ`
-3. `Microsoft.AspNetCore.OpenApi`
-4. `Microsoft.EntityFrameworkCore.Tools`
-5. `Swashbuckle.AspNetCore`
 
 Since we are using an EF Core-specific package, we must configure a `DbContext` in the DI container:
 
