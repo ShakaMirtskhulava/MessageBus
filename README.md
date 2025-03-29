@@ -1,39 +1,41 @@
 # MessageBus for Microservices
 
-This repository contains an example of how messaging can be implemented using the **SHAKA.MessageBus** libraries in .NET. Below are the core libraries used:
+This repository contains an example of how messaging can be implemented using the **SHAKA.MessageBus** libraries in .NET. Below are the relevant libraries:
 
 1. [SHAKA.MessageBus](https://github.com/ShakaMirtskhulava/SHAKA.MessageBus)
 2. [SHAKA.MessageBus.IntegrationEventLog](https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.IntegrationEventLog)
 3. [SHAKA.MessageBus.IntegrationEventLog.EF](https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.IntegrationEventLog.EF)
 4. [SHAKA.MessageBus.RabbitMQ](https://github.com/ShakaMirtskhulava/SHAKA.MessageBus.RabbitMQ)
 
-## Microservice Design Types
+## Microservice Design Approaches
 
-SHAKA.MessageBus supports two types of microservice architectures:
+SHAKA.MessageBus libraries support two types of microservice design:
 
-1. **Type 1:** A single .NET application that implements event publishing, handling, and business logic.
-2. **Type 2:** Separate .NET applications for event publishing, event handling, and business logic.
+1. **Type 1:** The application implements event publishing, event handling, and business logic within a single .NET executable project.
+2. **Type 2:** The application separates event publishing, event handling, and business logic into different .NET applications.
 
 ---
 
-## Implementing Message Handling in a Type 1 Application
+# Implementing Message Handling in a Type 1 Application
 
-In this setup, all the messaging logic, including publishing and handling, is implemented in a single application.
+In a Type 1 application, all event handling and publishing occur within the same application. Let's go through the required steps.
 
 ### Required Packages
 
-We need to install the following NuGet packages:
+To get started, install the following NuGet packages:
 
 - `SHAKA.MessageBus.IntegrationEventLog.EF`
 - `SHAKA.MessageBus.RabbitMQ`
-- Additional general development packages:
-  - `Microsoft.AspNetCore.OpenApi`
-  - `Microsoft.EntityFrameworkCore.Tools`
-  - `Swashbuckle.AspNetCore`
+
+Additionally, for general development, you may also need:
+
+- `Microsoft.AspNetCore.OpenApi`
+- `Microsoft.EntityFrameworkCore.Tools`
+- `Swashbuckle.AspNetCore`
 
 ### Configuring the Database Context
 
-Since we are using EF Core for data access, we need to configure a `DbContext` in the DI container:
+Since we are using Entity Framework Core, we need to configure the `DbContext` in the dependency injection container:
 
 ```csharp
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -45,9 +47,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 ```
 
-### Configuring the Message Bus
+### Configuring RabbitMQ and Event Handlers
 
-To use RabbitMQ as our event bus, we configure it in the DI container and register event subscriptions:
+Now, we configure RabbitMQ as our message broker and register our event handlers:
 
 ```csharp
 builder.AddRabbitMqEventBus(connectionFactory =>
@@ -62,9 +64,9 @@ builder.AddRabbitMqEventBus(connectionFactory =>
 .AddSubscription<ToastCreated, ToastCreatedEventHandler>();
 ```
 
-### Configuring the Event Log Service
+### Configuring the Integration Event Log
 
-The `IntegrationEventLog.EF` service enables the outbox pattern and failed message handling. Since this app both publishes and handles events, we use:
+We configure the `IntegrationEventLog.EF` service to enable the outbox pattern and failed message handling logic:
 
 ```csharp
 var eventTypesAssemblyName = typeof(OrderCreated).Assembly.FullName!;
@@ -73,13 +75,13 @@ builder.Services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options =>
     options.DelayMs = 1000;
     options.EventsBatchSize = 1000;
     options.FailedMessageChainBatchSize = 100;
-    options.EventTyepsAssemblyName = eventTypesAssemblyName;
+    options.EventTypesAssemblyName = eventTypesAssemblyName;
 });
 ```
 
-### Implementing Event Classes
+### Implementing Event and Entity Classes
 
-Event classes must implement `IntegrationEvent`, and entity classes must implement `IEntity<T>`:
+Entities must implement the `IEntity` interface, and events must derive from `IntegrationEvent`:
 
 ```csharp
 public class Order : IEntity<Guid>
@@ -103,7 +105,7 @@ public record OrderCreated : IntegrationEvent
 
 ### Implementing Event Handlers
 
-Handlers must implement `IIntegrationEventHandler<T>`:
+Event handlers must implement the `IIntegrationEventHandler<T>` interface:
 
 ```csharp
 public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger) : IIntegrationEventHandler<OrderCreated>
@@ -116,9 +118,9 @@ public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger) 
 }
 ```
 
-### Creating an Order
+### Creating an Order and Publishing an Event
 
-We define an API endpoint that creates an order, writes the entity and event log in the database, and publishes the event:
+Now, we define an endpoint that creates an order and publishes an event:
 
 ```csharp
 app.MapPost("/order", async (OrderRequest order, CancellationToken cancellationToken) =>
@@ -138,31 +140,25 @@ app.MapPost("/order", async (OrderRequest order, CancellationToken cancellationT
 
 ---
 
-## Implementing Message Handling in a Type 2 Application
+# Implementing Message Handling in a Type 2 Application
 
-In this setup, we have three separate projects:
+In a Type 2 application, event publishing, event handling, and business logic are implemented in separate projects. Here, we will have three projects:
 
-1. **Business Logic Project** - Handles data storage and event logging.
-2. **Event Publisher** - Reads from the event log and publishes events.
-3. **Event Handler** - Listens for events and processes them.
+1. **Business Logic Project** - Implements core application logic.
+2. **Event Publisher** - Reads integration event logs and publishes messages.
+3. **Event Handler** - Listens to messages and processes them.
 
 ### Required Packages
 
-#### Business Logic Project:
-- `SHAKA.MessageBus.RabbitMQ`
-- `SHAKA.MessageBus.IntegrationEventLog.EF`
+| Component | Packages |
+|-----------|----------|
+| Business Logic | SHAKA.MessageBus.RabbitMQ, SHAKA.MessageBus.IntegrationEventLog.EF |
+| Event Publisher | SHAKA.MessageBus.RabbitMQ, SHAKA.MessageBus.IntegrationEventLog.EF |
+| Event Handler | SHAKA.MessageBus.RabbitMQ, SHAKA.MessageBus.IntegrationEventLog.EF |
 
-#### Event Publisher:
-- `SHAKA.MessageBus.RabbitMQ`
-- `SHAKA.MessageBus.IntegrationEventLog.EF`
+### Configuring the Business Logic Project
 
-#### Event Handler:
-- `SHAKA.MessageBus.RabbitMQ`
-- `SHAKA.MessageBus.IntegrationEventLog.EF`
-
-### Business Logic Configuration
-
-We configure the database context and RabbitMQ in our business logic project:
+Set up the `DbContext` and RabbitMQ event bus:
 
 ```csharp
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -182,14 +178,17 @@ builder.AddRabbitMqEventBus(connectionFactory =>
 });
 ```
 
-Since we are only logging events here, we do **not** configure a publisher:
+Use `ConfigureEventLogServices()` to register the event log service without a publisher:
 
 ```csharp
 var eventTypesAssemblyName = typeof(OrderCreated).Assembly.FullName!;
 builder.Services.ConfigureEventLogServices<AppDbContext>(eventTypesAssemblyName);
 ```
 
-### Event Handling Configuration
+### Configuring the Event Handler Project
+
+Set up RabbitMQ and register event handlers as well as configure the event logs and event services using ConfigureEventLogServices method,
+since this app has nothing to do with publishing we won't use ConfigureEventLogServicesWithPublisher method:
 
 ```csharp
 services.AddRabbitMqEventBus(configuration, connectionFactory =>
@@ -200,21 +199,67 @@ services.AddRabbitMqEventBus(configuration, connectionFactory =>
     connectionFactory.Password = "password";
 })
 .AddSubscription<OrderCreated, OrderCreatedHandler>();
+
+services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), opt =>
+    {
+        opt.EnableRetryOnFailure();
+    });
+});
+
+var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
+services.ConfigureEventLogServices<AppDbContext>(eventTyepsAssemblyName);
 ```
 
-### Event Publisher Configuration
+Here we also define a event handlers
+```csharp
+public class OrderCreatedHandler :IIntegrationEventHandler<OrderCreated>
+{
+    public Task Handle(OrderCreated @event)
+    {
+        Console.WriteLine("Handling the order created");
+        return Task.CompletedTask;
+    }
+}
+```
+
+### Configuring the Event Publisher Project
+
+Configure the publisher to read event logs and publish messages:
 
 ```csharp
+services.AddRabbitMqEventBus(configuration,connectionFactory =>
+{
+    connectionFactory.HostName = "localhost";
+    connectionFactory.Port = 5672;
+    connectionFactory.UserName = "user";
+    connectionFactory.Password = "password";
+});
+
+services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), opt =>
+    {
+        opt.EnableRetryOnFailure();
+    });
+});
+var eventTyepsAssemblyName = typeof(OrderCreated).Assembly.FullName!;
+
 services.ConfigureEventLogServicesWithPublisher<AppDbContext>(options =>
 {
     options.DelayMs = 1000;
     options.EventsBatchSize = 1000;
     options.FailedMessageChainBatchSize = 100;
-    options.EventTyepsAssemblyName = eventTypesAssemblyName;
+    options.EventTyepsAssemblyName = eventTyepsAssemblyName;
 });
 ```
 
 ### Final Notes
 
-Ensure database migrations are generated and applied. Start the **Event Handler** before the **Event Publisher**, as event handlers create queues required by the publisher.
+Ensure that:
+- Migrations are generated, and the database is created.
+- Event handlers run before event publishers to create necessary queues in RabbitMQ.
+
+This setup ensures a robust, scalable, and reliable message-handling system for microservices.
 
