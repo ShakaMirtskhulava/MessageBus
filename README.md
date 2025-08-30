@@ -113,7 +113,8 @@ public record OrderCreated : IntegrationEvent
 }
 ```
 
-Do not forget to give the event a JsonConstructor, which'll be used by the Json Serializer to deserialize the Contnet.
+Do not forget to give the event a JsonConstructor, which'll be used by the Json Serializer to deserialize the Contnet. Alternatively
+you can use the primary constructor and it'll work as well.
 
 ### Implementing Event Handlers
 
